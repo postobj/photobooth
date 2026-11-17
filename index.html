@@ -625,11 +625,14 @@ migrateStrips().catch(()=>{});
 (async()=>{const n=await get('boothName');if(n){BOOTH=n;booth.setName(n);updPlace();}})();
 $('#flipBtn2')&&0;
 (function(){try{const b=document.querySelector('.face.back');if(b)b.style.backgroundImage=`url(${perfPaper(SW,SH).toDataURL('image/png')})`;}catch(e){}})();
+async function navStrip(d){if(!cur)return;const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===cur.id);const n=l[i+d];if(!n)return;
+  const c=$('#card');c.style.transition='transform .25s,opacity .25s';c.style.opacity='0';c.style.transform=`translateX(${-d*60}px) rotate(-2.5deg)`;
+  await wait(220);await openStrip(n.id);c.style.transition='none';c.style.transform=`translateX(${d*60}px) rotate(-2.5deg)`;void c.offsetWidth;c.style.transition='transform .3s,opacity .3s';c.style.opacity='1';c.style.transform='';setTimeout(()=>c.style.transition='',320);sfx.swish();}
 function flipCard(){const c=$('#card');c.classList.toggle('flip');sfx.swish();if(!c.classList.contains('flip'))$('#note').blur();}
 $('#card').addEventListener('click',e=>{if(e.target.tagName!=='TEXTAREA')flipCard();});
 $('#flipBtn2').addEventListener('click',()=>{flipCard();});
 (function(){let sx=null;const c=$('#card');c.addEventListener('pointerdown',e=>{if(e.target.tagName!=='TEXTAREA')sx=e.clientX;});
-  c.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40){e.stopPropagation();flipCard();sx=null;c.dataset.sw='1';setTimeout(()=>delete c.dataset.sw,50);}sx=null;});
+  c.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40){e.stopPropagation();navStrip(e.clientX<sx?1:-1);sx=null;c.dataset.sw='1';setTimeout(()=>delete c.dataset.sw,50);}sx=null;});
   c.addEventListener('click',e=>{if(c.dataset.sw)e.stopImmediatePropagation();},true);})();
 $('#note').addEventListener('click',e=>{e.stopPropagation();openWrite();});
 function openWrite(){if(!cur)return;const o=document.createElement('div');o.className='writeSheet';

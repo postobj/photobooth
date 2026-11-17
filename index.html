@@ -391,11 +391,15 @@ function startHum(){const a=audio();if(!a||hum)return;const o=a.createOscillator
 function muffle(on){if(humF&&ac)humF.frequency.setTargetAtTime(on?180:900,ac.currentTime,.4);}
 function burst(dur,freq,q,vol,type){const a=audio();if(!a)return;const s=a.createBufferSource();s.buffer=noiseBuf(dur);const f=a.createBiquadFilter();f.type=type||'bandpass';f.frequency.value=freq;f.Q.value=q||1;const g=a.createGain();g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);s.connect(f);f.connect(g);g.connect(a.destination);s.start();}
 function tone(f0,f1,dur,vol,type){const a=audio();if(!a)return;const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,a.currentTime);o.frequency.exponentialRampToValueAtTime(f1,a.currentTime+dur);g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);}
+function buzz(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
 const sfx={ // kept quiet and soft: felt more than heard
-  rings(){for(let i=0;i<3;i++)setTimeout(()=>burst(.05,2600+Math.random()*900,6,.018),i*55);},
+  // curtain: metal rings sliding along the rod, a soft fabric swish under them
+  rings(){let t=0;for(let i=0;i<7;i++){t+=32+Math.random()*34;const v=1-i/9;setTimeout(()=>{const f=3600+Math.random()*1400;tone(f,f*.97,.05,.0045*v);tone(f*1.52,f*1.5,.035,.002*v);burst(.025,5200,3,.004*v);},t);}
+    burst(.45,420,.6,.010,'lowpass');buzz([5,40,4]);},
   swish(){burst(.6,500,.5,.03,'lowpass');},
-  tick(){burst(.03,1800,4,.025);},
-  charge(){tone(900,1500,.6,.006);},
+  // countdown: a soft, low blip, the last one a little higher
+  tick(n){const f=n===1?740:560;tone(f,f*.985,.09,.010,'sine');tone(f*2,f*1.97,.05,.0025,'sine');buzz(6);},
+  charge(){tone(900,1400,.5,.0025);},
   flash(){burst(.18,1400,.7,.05,'lowpass');setTimeout(()=>burst(.06,700,2,.04),160);},
   clunk(){tone(70,45,.16,.07);burst(.08,300,1,.04,'lowpass');},
   drip(){tone(1100,800,.1,.02);}
@@ -490,7 +494,7 @@ $('#lamp').addEventListener('click',async()=>{
   await wait(1300);const frames=[];const dots=[...document.querySelectorAll('#dots i')];
   for(let i=0;i<4;i++){
     $('#poseNo').textContent='Pose '+(i+1)+' / 4';
-    for(const n of [3,2,1]){const c=$('#count');c.textContent=n;c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');sfx.tick();if(n===1)sfx.charge();await wait(820);}
+    for(const n of [3,2,1]){const c=$('#count');c.textContent=n;c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');sfx.tick(n);if(n===1)sfx.charge();await wait(820);}
     const f=capture();if(f)frames.push(f);
     const w=$('#whiteout');w.classList.remove('go');void w.offsetWidth;w.classList.add('go');sfx.flash();$('#booth').classList.add('flash');setTimeout(()=>$('#booth').classList.remove('flash'),140);dots[i].classList.add('on');
     $('#boothHint').textContent=i<3?'Change your pose':'That was the last one';

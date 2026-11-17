@@ -632,7 +632,10 @@ async function openArchive(month,open){
     h+=`<button class="cover" id="archCover" aria-label="Open or close the folder"><span><b>PHOTOBOOTH</b><i>ARCHIVE</i><small>${cur.length?(cities?cities+' · ':'')+ml:'NOTHING HERE YET<br>GO TO THE BOOTH'}</small></span><span class="foot"><span>${cur.length?cur.length+(cur.length>1?' STRIPS':' STRIP'):'EMPTY'}</span><span>${cur.length?'N° '+String(total(archMonth)).padStart(3,'0'):''}</span></span></button>`;
     h+=`<svg class="clip" aria-hidden="true" width="26" height="78" viewBox="0 0 26 78"><path d="M8 70 V14 a5 5 0 0 1 10 0 V62 a8 8 0 0 1 -16 0 V20" fill="none" stroke="#9a9a98" stroke-width="2.4" stroke-linecap="round"/></svg><svg class="binder" aria-hidden="true" width="46" height="56" viewBox="0 0 46 56"><rect x="18" y="10" width="20" height="36" rx="3" fill="#3a3a38"/><path d="M20 14 Q2 14 4 28 Q2 42 20 42" fill="none" stroke="#b9b9b6" stroke-width="2.4"/></svg>`;
     let mo='';if(archMore)mo=`<div class="months">${months.map(k=>`<button data-m="${k}">${mLab(k)} · ${by[k].length}</button>`).join('')}</div>`;
-    const chips=cur.length>1?`<div class="days">${cur.slice(0,8).map(x=>{const d=new Date(x.date);return `<button data-did="${x.id}">${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}</button>`;}).join('')}</div>`:'';
+    const dk=x=>{const d=new Date(x.date);return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0');};
+    const perDay={};cur.slice().sort((a,b)=>a.date-b.date).forEach(x=>{const k=dk(x);(perDay[k]=perDay[k]||[]).push(x.id);});
+    const chipLab=x=>{const k=dk(x),l=perDay[k];return l.length>1?k+' · '+(l.indexOf(x.id)+1):k;};
+    const chips=cur.length>1?`<div class="days">${cur.slice(0,8).map(x=>`<button data-did="${x.id}">${chipLab(x)}</button>`).join('')}</div>`:'';
     A.innerHTML=mo+`<div class="stage" id="archStage">${h}</div>`+chips+`<div class="openHint">${cur.length?'<button id="archOpenBtn">( Tap to open )</button>':''}${more>0?`<button class="ghost" id="archMoreBtn">+ ${more} earlier</button>`:''}</div>`;
     const fit=()=>{const st=$('#archStage');if(!st)return;const k=Math.max(.6,Math.min(1.1,(innerWidth-60)/300,(innerHeight-360)/500));st.style.transform=`translate(-50%,-50%) scale(${k})`;};fit();window.onresize=fit;
     const st=$('#archStage'),hintB=$('#archOpenBtn');let lifted=null;

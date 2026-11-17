@@ -151,11 +151,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 /* ================= strip view ================= */
 .stage3d{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);perspective:1600px}
-.card{position:relative;width:min(30vw,calc(62dvh*.214),170px);aspect-ratio:492/2298;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.5,0,.2,1);transform:rotate(-2.5deg)}
+.card{position:relative;width:min(30vw,calc(62dvh*.214),170px);aspect-ratio:548/2348;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.5,0,.2,1);transform:rotate(-2.5deg)}
 .card.flip{transform:rotate(-2.5deg) rotateY(180deg)}
-.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 22px 40px rgba(0,0,0,.28),0 2px 4px rgba(0,0,0,.15)}
-.face img{width:100%;height:100%;display:block}
-.back{transform:rotateY(180deg);background:var(--paper);padding:14px 10px;display:flex;flex-direction:column;gap:10px}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face img{width:100%;height:100%;display:block;object-fit:contain}
+.back{transform:rotateY(180deg);background:transparent center/100% 100% no-repeat;padding:22px 16px;display:flex;flex-direction:column;gap:10px}
 .back .stamp{font-size:8.5px;line-height:1.7;letter-spacing:.14em;text-transform:uppercase;color:#7a7266;border-bottom:1px dashed #c9bfae;padding-bottom:8px}
 .back textarea{flex:none;height:46%;width:100%;border:0;background:transparent;resize:none;font-family:var(--hand);font-size:11.5px;line-height:2.1;color:#3b2f22;outline:none}
 .meta{position:absolute;left:0;right:0;top:calc(46% + min(30vw,calc(62dvh*.214),170px)*2.34 + 18px);text-align:center;font-size:10px;letter-spacing:.2em;text-transform:uppercase;line-height:2;color:var(--muted)}
@@ -278,6 +278,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #arch .inside button.dragging{z-index:5;transition:none!important;cursor:grabbing}
 #arch .inside button.dragging img{box-shadow:0 18px 30px rgba(0,0,0,.3)}
 #arch .inside.sorting button:not(.dragging){transition:transform .25s}
+#arch .peek img,#arch .inside img,#arch .peek.up img,#arch .inside button.on img,#arch .inside button.dragging img{box-shadow:none!important}
 </style>
 </head>
 <body>
@@ -467,17 +468,20 @@ function capture(){
   for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*26;const l=Math.max(0,Math.min(255,d[i]+n));d[i]=l;d[i+1]=l;d[i+2]=l;}
   x.putImageData(im,0,0);return c;
 }
-function buildStrip(frames){
-  const M=36,G=22,W=FW+M*2,H=M*2+FH*4+G*3;
+function perfPaper(W,H){ // white paper with stamp-like perforated edges, transparent outside
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
-  x.fillStyle='#efece4';x.fillRect(0,0,W,H);
-  frames.forEach((f,i)=>{const y=M+i*(FH+G);x.save();x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=2;x.drawImage(f,M,y);x.restore();});
-  // warm developer tint, chemical stains near the edges
-  x.globalCompositeOperation='multiply';x.fillStyle='rgba(240,228,205,.55)';x.fillRect(0,0,W,H);
-  for(let i=0;i<5;i++){const sx=Math.random()<.5?Math.random()*W*.25:W-Math.random()*W*.25,sy=Math.random()*H,r=30+Math.random()*90;
-    const g=x.createRadialGradient(sx,sy,0,sx,sy,r);g.addColorStop(0,'rgba(170,135,85,.22)');g.addColorStop(1,'rgba(170,135,85,0)');x.fillStyle=g;x.fillRect(sx-r,sy-r,r*2,r*2);}
-  x.globalCompositeOperation='source-over';
-  return c.toDataURL('image/jpeg',.88);
+  const pi=x.createImageData(W,H),pd=pi.data;for(let i=0;i<pd.length;i+=4){const n=252+Math.random()*3;pd[i]=pd[i+1]=pd[i+2]=n;pd[i+3]=255;}x.putImageData(pi,0,0);
+  x.globalCompositeOperation='destination-out';const r=11,step=30;
+  const nx=Math.round((W-2*r)/step),sx=(W-nx*step)/2;for(let k=0;k<=nx;k++){for(const y of [0,H]){x.beginPath();x.arc(sx+k*step,y,r,0,7);x.fill();}}
+  const ny=Math.round((H-2*r)/step),sy=(H-ny*step)/2;for(let k=0;k<=ny;k++){for(const xx of [0,W]){x.beginPath();x.arc(xx,sy+k*step,r,0,7);x.fill();}}
+  x.globalCompositeOperation='source-over';return c;
+}
+const SM=34,SG=20,SP=30,SW=420+(SM+SP)*2,SH=(SM+SP)*2+540*4+SG*3;
+function buildStrip(frames){
+  const c=perfPaper(SW,SH),x=c.getContext('2d');
+  frames.forEach((f,i)=>{const y=SP+SM+i*(FH+SG);x.drawImage(f,SP+SM,y);
+    x.save();x.globalCompositeOperation='multiply';x.fillStyle='rgba(240,228,205,.45)';x.fillRect(SP+SM,y,FW,FH);x.restore();});
+  return c.toDataURL('image/png');
 }
 
 $('#lamp').addEventListener('click',async()=>{
@@ -541,6 +545,7 @@ async function openStrip(id){
   $('#note').value=cur.note||'';show('view');
 }
 $('#flipBtn2')&&0;
+(function(){try{const b=document.querySelector('.face.back');if(b)b.style.backgroundImage=`url(${perfPaper(SW,SH).toDataURL('image/png')})`;}catch(e){}})();
 function flipCard(){const c=$('#card');c.classList.toggle('flip');sfx.swish();if(!c.classList.contains('flip'))$('#note').blur();}
 $('#card').addEventListener('click',e=>{if(e.target.tagName!=='TEXTAREA')flipCard();});
 $('#flipBtn2').addEventListener('click',()=>{flipCard();});
@@ -554,7 +559,7 @@ async function shareImage(){ // only the strip; with a note, front and back side
   const c=document.createElement('canvas');c.width=note?W*2+gap*3:W+gap*2;c.height=H+gap*2;const x=c.getContext('2d');
   x.fillStyle='#1a1715';x.fillRect(0,0,c.width,c.height);x.drawImage(im,gap,gap);
   if(!note)return new Promise(r=>c.toBlob(r,'image/jpeg',.9));
-  x.fillStyle='#efece4';x.fillRect(W+gap*2,gap,W,H);x.fillStyle='#6d5b45';x.font='22px "DM Mono",monospace';
+  x.drawImage(perfPaper(W,H),W+gap*2,gap);x.fillStyle='#6d5b45';x.font='22px "DM Mono",monospace';
   const d=new Date(cur.date);x.fillText(cur.place.toUpperCase(),W+gap*2+30,gap+60);x.fillText(d.toLocaleDateString('de-DE'),W+gap*2+30,gap+95);
   x.fillStyle='#3b2f22';x.font='30px "Homemade Apple",cursive';wrap(x,note,W+gap*2+30,gap+190,W-60,64);
   return new Promise(r=>c.toBlob(r,'image/jpeg',.9));

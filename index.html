@@ -157,7 +157,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .face img{width:100%;height:100%;display:block;object-fit:contain}
 .back{transform:rotateY(180deg);background:transparent center/100% 100% no-repeat;padding:22px 16px;display:flex;flex-direction:column;gap:10px}
 .back .stamp{font-size:8.5px;line-height:1.7;letter-spacing:.14em;text-transform:uppercase;color:#7a7266;border-bottom:1px dashed #c9bfae;padding-bottom:8px}
-.back textarea{flex:none;height:46%;width:100%;border:0;background:transparent;resize:none;font-family:var(--hand);font-size:11.5px;line-height:2.1;color:#3b2f22;outline:none}
+.back textarea{flex:none;height:56%;width:100%;border:0;background:transparent;resize:none;font-family:var(--hand);font-size:9px;line-height:1.9;overflow:hidden;cursor:text;color:#3b2f22;outline:none}
 .meta{position:absolute;left:0;right:0;top:calc(46% + min(30vw,calc(62dvh*.214),170px)*2.34 + 18px);text-align:center;font-size:10px;letter-spacing:.2em;text-transform:uppercase;line-height:2;color:var(--muted)}
 .actions{position:absolute;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:8px}
 
@@ -290,6 +290,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .nameSheet input{font:inherit;font-size:16px;letter-spacing:.08em;text-transform:uppercase;border:0;border-bottom:1px solid #1c1c1b;background:none;padding:8px 0;outline:none;color:#1c1c1b}
 .nameSheet form div{display:flex;justify-content:flex-end;gap:8px}
 .nameSheet .ghost{border-color:transparent}
+
+.writeSheet{position:fixed;inset:0;z-index:50;background:rgba(243,242,239,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;opacity:0;transition:opacity .3s}
+.writeSheet.on{opacity:1}
+.writeSheet .paper{width:min(88vw,420px);height:min(52dvh,420px);background:transparent center/100% 100% no-repeat;padding:30px 30px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px}
+.writeSheet .stampLine{font-family:"DM Mono",monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7266}
+.writeSheet textarea{flex:1;border:0;background:transparent;resize:none;outline:none;font-family:var(--hand);font-size:18px;line-height:1.9;color:#3b2f22}
+.writeSheet .count{font-family:"DM Mono",monospace;font-size:9px;letter-spacing:.14em;color:#9a948a;text-align:right}
+.writeSheet .row{display:flex;gap:8px}
 </style>
 </head>
 <body>
@@ -354,7 +362,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="viewcol">
       <div class="stage3d"><div class="card" id="card">
         <div class="face front"><img id="viewImg" alt="Photo strip, four black and white photos"></div>
-        <div class="face back"><div class="stamp" id="stamp"></div><textarea id="note" placeholder="write something on the back…" maxlength="180"></textarea><div class="flipback">↺ turn back</div></div>
+        <div class="face back"><div class="stamp" id="stamp"></div><textarea id="note" placeholder="tap to write on the back…" maxlength="180" readonly></textarea><div class="flipback">↺ turn back</div></div>
       </div></div>
       <button class="link stripTitle" id="stripTitle" aria-label="Rename this strip"></button><div class="meta" id="viewMeta"><span id="viewDate"></span> · <button class="link inline" id="toArchive">kept in your archive →</button></div>
       <div class="actions"><button class="btn" id="flipBtn2">↺ Flip</button><button class="btn" id="sendBtn">Send</button><button class="btn" id="saveBtn">Download</button></div>
@@ -373,7 +381,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   <div id="toast"></div>
 </div>
 
-<script src="booth3d.js?v=20261117c"></script>
+<script src="booth3d.js?v=20261117d"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -604,6 +612,15 @@ $('#flipBtn2').addEventListener('click',()=>{flipCard();});
 (function(){let sx=null;const c=$('#card');c.addEventListener('pointerdown',e=>{if(e.target.tagName!=='TEXTAREA')sx=e.clientX;});
   c.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40){e.stopPropagation();flipCard();sx=null;c.dataset.sw='1';setTimeout(()=>delete c.dataset.sw,50);}sx=null;});
   c.addEventListener('click',e=>{if(c.dataset.sw)e.stopImmediatePropagation();},true);})();
+$('#note').addEventListener('click',e=>{e.stopPropagation();openWrite();});
+function openWrite(){if(!cur)return;const o=document.createElement('div');o.className='writeSheet';
+  const d=new Date(cur.date);
+  o.innerHTML=`<div class="paper"><div class="stampLine">${(cur.place||'').replace(/</g,'&lt;')} · ${d.toLocaleDateString('de-DE')}</div><textarea maxlength="180" placeholder="write something on the back…"></textarea><div class="count"></div></div><div class="row"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Done</button></div>`;
+  document.body.appendChild(o);try{window.__wp=window.__wp||perfPaper(560,560).toDataURL('image/png');o.querySelector('.paper').style.backgroundImage=`url(${window.__wp})`;}catch(e){}const t=o.querySelector('textarea'),cn=o.querySelector('.count');t.value=cur.note||'';
+  const upd=()=>cn.textContent=t.value.length+' / 180';upd();t.addEventListener('input',upd);
+  setTimeout(()=>{o.classList.add('on');t.focus();},20);
+  const close=save=>{if(save){const n=$('#note');n.value=t.value;n.dispatchEvent(new Event('input'));}o.classList.remove('on');setTimeout(()=>o.remove(),300);};
+  const [c,ok]=o.querySelectorAll('.row button');c.onclick=()=>close(false);ok.onclick=()=>close(true);}
 let noteT;$('#note').addEventListener('input',e=>{if(!cur)return;cur.note=e.target.value;clearTimeout(noteT);noteT=setTimeout(()=>put(cur.id,cur),400);});
 async function shareImage(){ // only the strip; with a note, front and back side by side
   const note=(($('#note')&&$('#note').value)||cur.note||'').trim();

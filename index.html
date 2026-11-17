@@ -303,8 +303,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .muteBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 
 /* inside: the open curtain sways a little, asking to be pulled closed (right to left) */
-#inCurtain.invite{animation:inviteSway 2.8s ease-in-out infinite}
-@keyframes inviteSway{0%,55%,100%{transform:translateX(0) skewX(0deg)}68%{transform:translateX(14px) skewX(2.2deg)}80%{transform:translateX(4px) skewX(.6deg)}90%{transform:translateX(8px) skewX(1.2deg)}}
+#inCurtain.invite{animation:inviteSway 6s ease-in-out infinite}
+@keyframes inviteSway{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.07)}}
 
 .btn.icon{width:44px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .btn.icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -313,6 +313,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .back textarea{height:auto!important;flex:1 1 auto!important;min-height:0;font-size:8px!important;line-height:1.75!important}
 .back .flipback{flex:none!important;font-size:6.5px!important;padding:5px 0 0!important}
 #inCurtain{right:auto!important;left:.25em;transform-origin:top left}
+#arch .days{display:none!important}
 </style>
 </head>
 <body>
@@ -350,7 +351,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="street"></div>
     <div class="curtain" id="inCurtain"></div>
     <div id="inArea" aria-label="Curtain: drag left to close"></div>
-    <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom));left:66%;max-width:62vw">( Pull the curtain closed → )</div>
+    <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom));left:62%;white-space:nowrap">( Close the curtain → )</div>
   </section>
 
   <!-- 3. the booth interior: no selfie, just dark glass -->

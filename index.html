@@ -258,7 +258,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 #arch .peek.up{z-index:auto!important;transform:translateY(-46px) rotate(0deg) scale(1.04)!important}
 #arch .peek.up img{box-shadow:0 10px 20px rgba(0,0,0,.22)}
-#arch .stage.isopen .cover{transform:rotateY(-155deg);opacity:.4;pointer-events:none}
+#arch .stage.isopen .cover{transform:rotateY(-155deg);opacity:.4;pointer-events:auto;cursor:pointer}
+#arch .inside{z-index:3}
 #arch .stage.isopen .clip,#arch .stage.isopen .binder,#arch .stage.isopen .edges{opacity:0;transition:opacity .35s}
 #arch .stage.isopen .peek{opacity:0;transform:translateY(-30px) rotate(var(--r));pointer-events:none;transition:opacity .45s,transform .6s}
 #arch .inside{position:absolute;left:12px;right:12px;top:14px;bottom:14px;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px 10px;align-content:start;padding:8px 4px;pointer-events:none}
@@ -271,6 +272,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 #arch .stage.isopen .inside button{opacity:1;transform:none}
 #arch .stage.instant *{transition:none!important}
 .back .flipback{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
+
+#arch .inside button{touch-action:none;user-select:none;-webkit-user-select:none}
+#arch .inside img{pointer-events:none;-webkit-user-drag:none}
+#arch .inside button.dragging{z-index:5;transition:none!important;cursor:grabbing}
+#arch .inside button.dragging img{box-shadow:0 18px 30px rgba(0,0,0,.3)}
+#arch .inside.sorting button:not(.dragging){transition:transform .25s}
 </style>
 </head>
 <body>
@@ -408,7 +415,7 @@ let waiting=false,curtainOpen=false,stripReady=false;
 const booth=window.mountBooth3($('#stage3d'),{
   canDrag:()=>!waiting,
   onDrag:()=>{},
-  onRelease:o=>{audio();sfx.rings();if(o<.38&&!waiting){booth.setOpen(.14);curtainOpen=true;setTimeout(stepIn,350);return;}
+  onRelease:(o,start)=>{audio();sfx.rings();if(!waiting&&(o<.38||(start!=null&&o<start-.12))){booth.setOpen(.14);curtainOpen=true;setTimeout(stepIn,350);return;}
     booth.setOpen(o);curtainOpen=false;$('#outHint').textContent='( Pull the curtain open → )';},
   onTap:(what)=>{audio();
     if(what==='info'||what==='out'){openSheet(what);return;}
@@ -581,7 +588,8 @@ async function openArchive(month,open){
   if(!archMonth||!by[archMonth])archMonth=months[0]||null;
   const A=$('#arch');const n=all.length;
   $('#archCount').textContent=n?n+(n>1?' strips':' strip')+(months.length>1?' · '+months.length+' months':''):'';
-  const cur=archMonth?by[archMonth]:[];const others=months.filter(k=>k!==archMonth);
+  const cur=archMonth?by[archMonth].slice():[];const others=months.filter(k=>k!==archMonth);
+  if(archMonth){const ord=(await get('order:'+archMonth))||[];if(ord.length){const ix=id=>{const i=ord.indexOf(id);return i<0?-1:i;};cur.sort((a,b)=>ix(a.id)-ix(b.id)||b.date-a.date);}}
   const total=k=>all.length-all.indexOf(by[k][0]);
   {
     let h='';const back=others.slice(0,2);const more=others.length-back.length;
@@ -607,7 +615,7 @@ async function openArchive(month,open){
     const setOpen=(v,instant)=>{archOpen=v;st.classList.toggle('isopen',v);if(instant)st.classList.add('instant');
       $('#archLeft').innerHTML=v?'<button id="archBack">← Close folder</button>':'Archive';
       $('#archBack')&&$('#archBack').addEventListener('click',()=>{sfx.swish();setOpen(false);});
-      if(hintB)hintB.textContent=v?'( Tap a strip to look )':(lifted?'( Tap again to open )':'( Tap to open )');
+      if(hintB)hintB.textContent=v?'( Close the folder )':(lifted?'( Tap again to open )':'( Tap to open )');
       if(v&&lifted)scrollIn(lifted);};
     const lift=id=>{if(archOpen){mark(id);scrollIn(id,true);return;}
       if(lifted===id){sfx.swish();setOpen(true);return;}
@@ -615,9 +623,30 @@ async function openArchive(month,open){
       if(hintB)hintB.textContent='( Tap again to open )';};
     A.querySelectorAll('.peek').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();lift(b.dataset.pid);}));
     A.querySelectorAll('.days button').forEach(b=>b.addEventListener('click',()=>lift(b.dataset.did)));
-    A.querySelectorAll('.inside button').forEach(b=>b.addEventListener('click',()=>{if(!archOpen)return;b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),480);}));
+    // inside the open folder: tap a strip to look, drag it to change its place
+    const box=A.querySelector('.inside');
+    A.querySelectorAll('.inside button').forEach(b=>{
+      let d=null;
+      b.addEventListener('click',e=>e.preventDefault());
+      b.addEventListener('pointerdown',e=>{if(!archOpen)return;d={x:e.clientX,y:e.clientY,moved:false};try{b.setPointerCapture(e.pointerId);}catch(_){}
+        const r=b.getBoundingClientRect();d.gx=e.clientX-r.left;d.gy=e.clientY-r.top;});
+      b.addEventListener('pointermove',e=>{if(!d)return;
+        if(!d.moved&&Math.hypot(e.clientX-d.x,e.clientY-d.y)>8){d.moved=true;b.classList.add('dragging');box.classList.add('sorting');}
+        if(!d.moved)return;
+        const k=st.getBoundingClientRect().width/300||1;
+        b.style.pointerEvents='none';const under=document.elementFromPoint(e.clientX,e.clientY);b.style.pointerEvents='';
+        const t=under&&under.closest&&under.closest('.inside button');
+        if(t&&t!==b){const tr=t.getBoundingClientRect();const after=(e.clientY>tr.top+tr.height/2&&e.clientX>tr.left)||e.clientX>tr.left+tr.width/2;
+          box.insertBefore(b,after?t.nextSibling:t);}
+        b.style.transform='none';const r=b.getBoundingClientRect();
+        b.style.transform=`translate(${(e.clientX-d.gx-r.left)/k}px,${(e.clientY-d.gy-r.top)/k}px) scale(1.08)`;});
+      const end=async e=>{if(!d)return;const was=d.moved;d=null;b.classList.remove('dragging');box.classList.remove('sorting');b.style.transform='';
+        if(was){sfx.swish();const ids=[...box.querySelectorAll('button')].map(x=>x.dataset.iid);await put('order:'+archMonth,ids);return;}
+        if(e.type==='pointerup'&&archOpen){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),480);}};
+      b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);
+    });
     $('#archCover').addEventListener('click',()=>{if(!cur.length)return;sfx.swish();setOpen(!archOpen);});
-    hintB&&hintB.addEventListener('click',()=>{if(archOpen)return;sfx.swish();setOpen(true);});
+    hintB&&hintB.addEventListener('click',()=>{sfx.swish();setOpen(!archOpen);});
     $('#archMoreBtn')&&$('#archMoreBtn').addEventListener('click',()=>{archMore=!archMore;openArchive();});
     if(archOpen&&cur.length){if(window.__lastStrip){lifted=window.__lastStrip;mark(lifted);}setOpen(true,true);requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.remove('instant')));}
   }

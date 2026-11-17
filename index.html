@@ -301,6 +301,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 .muteBtn{width:22px;height:18px;padding:0;border:0;background:none;opacity:.6;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .muteBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* inside: the open curtain sways a little, asking to be pulled closed (right to left) */
+#inCurtain.invite{animation:inviteSway 2.8s ease-in-out infinite}
+@keyframes inviteSway{0%,55%,100%{transform:translateX(0) skewX(0deg)}68%{transform:translateX(-14px) skewX(-2.2deg)}80%{transform:translateX(-4px) skewX(-.6deg)}90%{transform:translateX(-8px) skewX(-1.2deg)}}
 </style>
 </head>
 <body>
@@ -338,7 +342,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="street"></div>
     <div class="curtain" id="inCurtain"></div>
     <div id="inArea" aria-label="Curtain: drag left to close"></div>
-    <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom))">← Close the curtain behind you</div>
+    <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom));left:42%">( ← Pull the curtain closed )</div>
   </section>
 
   <!-- 3. the booth interior: no selfie, just dark glass -->
@@ -468,11 +472,11 @@ function animTo(el,from,to,ms,apply,done){const t0=performance.now();(function s
 /* inside curtain: drag left to close */
 (function(){const a=$('#inArea'),ic=$('#inCurtain');let sx=null,f0=.14,f=.14;
   const ap=v=>{f=v;setCurtain(ic,v,2.6,4.6);$('#inside .street').style.opacity=String(1-((v-.14)/.86)*.9);};
-  a.addEventListener('pointerdown',e=>{audio();sx=e.clientX;f0=f;try{a.setPointerCapture(e.pointerId);}catch(_){}sfx.rings();});
+  a.addEventListener('pointerdown',e=>{audio();ic.classList.remove('invite');sx=e.clientX;f0=f;try{a.setPointerCapture(e.pointerId);}catch(_){}sfx.rings();});
   a.addEventListener('pointermove',e=>{if(sx==null)return;ap(Math.max(.14,Math.min(1,f0-(e.clientX-sx)/innerWidth)));});
-  const up=()=>{if(sx==null)return;sx=null;if(f>.55){animTo(ic,f,1,380,ap,enterBooth);}else animTo(ic,f,.14,380,ap);};
+  const up=()=>{if(sx==null)return;sx=null;if(f>.55){animTo(ic,f,1,380,ap,enterBooth);}else animTo(ic,f,.14,380,ap,()=>ic.classList.add('invite'));};
   a.addEventListener('pointerup',up);a.addEventListener('pointercancel',up);
-  window.__resetIn=()=>{ap(.14);$('#inHint').style.opacity='1';};})();
+  window.__resetIn=()=>{ap(.14);ic.classList.add('invite');$('#inHint').style.opacity='1';};ic.classList.add('invite');})();
 async function enterBooth(){muffle(true);sfx.clunk();$('#inHint').style.opacity='0';await wait(500);show('booth');startCamera();}
 
 /* ---------- booth ---------- */

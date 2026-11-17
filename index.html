@@ -305,6 +305,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* inside: the open curtain sways a little, asking to be pulled closed (right to left) */
 #inCurtain.invite{animation:inviteSway 2.8s ease-in-out infinite}
 @keyframes inviteSway{0%,55%,100%{transform:translateX(0) skewX(0deg)}68%{transform:translateX(-14px) skewX(-2.2deg)}80%{transform:translateX(-4px) skewX(-.6deg)}90%{transform:translateX(-8px) skewX(-1.2deg)}}
+
+.btn.icon{width:44px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.btn.icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.back{padding:26px 22px 22px!important;gap:6px!important;overflow:hidden}
+.back .stamp{font-size:6.5px!important;letter-spacing:.08em!important;line-height:1.6!important;overflow-wrap:anywhere;padding-bottom:5px!important}
+.back textarea{height:auto!important;flex:1 1 auto!important;min-height:0;font-size:8px!important;line-height:1.75!important}
+.back .flipback{flex:none!important;font-size:6.5px!important;padding:5px 0 0!important}
 </style>
 </head>
 <body>
@@ -372,7 +379,7 @@ button{font:inherit;color:inherit;cursor:pointer}
         <div class="face back"><div class="stamp" id="stamp"></div><textarea id="note" placeholder="tap to write on the back…" maxlength="180" readonly></textarea><div class="flipback">↺ turn back</div></div>
       </div></div>
       <button class="link stripTitle" id="stripTitle" aria-label="Rename this strip"></button><div class="meta" id="viewMeta"><span id="viewDate"></span> · <button class="link inline" id="toArchive">kept in your archive →</button></div>
-      <div class="actions"><button class="btn" id="flipBtn2">↺ Flip</button><button class="btn" id="sendBtn">Send</button><button class="btn" id="saveBtn">Download</button></div>
+      <div class="actions"><button class="btn" id="flipBtn2">↺ Flip</button><button class="btn icon" id="sendBtn" aria-label="Send to a friend" title="Send"><svg viewBox="0 0 20 20"><path d="M3 10l14-7-5 14-2.5-5.5z"/><path d="M9.5 11.5L17 3"/></svg></button><button class="btn icon" id="saveBtn" aria-label="Save" title="Save"><svg viewBox="0 0 20 20"><path d="M10 3v10M5.5 8.5L10 13l4.5-4.5"/><path d="M4 16h12"/></svg></button></div>
     </div>
     <div class="bottom"><div class="tabs"><button class="link off" data-go="out">Booth</button><button class="link off" data-go="archive">Archive</button><button class="link off" disabled style="opacity:.45">Map · soon</button><button class="link muteBtn" aria-label="Sound on or off" title="Sound"></button></div></div>
   </section>
@@ -592,7 +599,7 @@ async function openStrip(id){
   cur=await get(id);if(!cur)return;
   $('#viewImg').src=cur.img;$('#card').classList.remove('flip');
   const d=new Date(cur.date),ds=d.toLocaleDateString('de-DE')+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-  $('#stamp').innerHTML=cur.place+'<br>'+ds;$('#viewPlace').textContent=cur.place;$('#viewDate').textContent=d.toLocaleDateString('de-DE');
+  $('#stamp').innerHTML=(cur.place||'').replace(/</g,'&lt;').split(' · ').join('<br>')+'<br>'+ds.split(' · ').join('<br>');$('#viewPlace').textContent=cur.place;$('#viewDate').textContent=d.toLocaleDateString('de-DE');
   $('#note').value=cur.note||'';cur.no=await stripNo(cur.id);$('#stripTitle').textContent=stripName(cur)+'  ✎';show('view');
 }
 async function stripNo(id){const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===id);return i<0?0:l.length-i;}
@@ -651,7 +658,7 @@ $('#sendBtn').addEventListener('click',async()=>{
   else{download(blob,'photobooth-strip.jpg');toast('Saved. Send it from your photos.');}
 });
 const isPhone=matchMedia('(pointer:coarse)').matches&&!!navigator.canShare;
-if(isPhone)$('#saveBtn').textContent='Save to Photos';
+if(isPhone)$('#saveBtn').setAttribute('aria-label','Save to Photos');
 $('#saveBtn').addEventListener('click',async()=>{if(!cur)return;const hasNote=(($('#note')&&$('#note').value)||cur.note||'').trim();const b=hasNote?await shareImage():await (await fetch(cur.img)).blob();
   if(isPhone){const f=new File([b],'photobooth-'+new Date(cur.date).toISOString().slice(0,10)+(b.type==='image/png'?'.png':'.jpg'),{type:b.type||'image/png'});
     if(navigator.canShare({files:[f]})){toast('Choose “Save Image” to keep it in Photos');try{await navigator.share({files:[f]});}catch(e){}return;}}download(b,'photobooth-'+new Date(cur.date).toISOString().slice(0,10)+'.jpg');});

@@ -304,7 +304,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 /* inside: the open curtain sways a little, asking to be pulled closed (right to left) */
 #inCurtain.invite{animation:inviteSway 2.8s ease-in-out infinite}
-@keyframes inviteSway{0%,55%,100%{transform:translateX(0) skewX(0deg)}68%{transform:translateX(-14px) skewX(-2.2deg)}80%{transform:translateX(-4px) skewX(-.6deg)}90%{transform:translateX(-8px) skewX(-1.2deg)}}
+@keyframes inviteSway{0%,55%,100%{transform:translateX(0) skewX(0deg)}68%{transform:translateX(14px) skewX(2.2deg)}80%{transform:translateX(4px) skewX(.6deg)}90%{transform:translateX(8px) skewX(1.2deg)}}
 
 .btn.icon{width:44px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .btn.icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -312,6 +312,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .back .stamp{font-size:6.5px!important;letter-spacing:.08em!important;line-height:1.6!important;overflow-wrap:anywhere;padding-bottom:5px!important}
 .back textarea{height:auto!important;flex:1 1 auto!important;min-height:0;font-size:8px!important;line-height:1.75!important}
 .back .flipback{flex:none!important;font-size:6.5px!important;padding:5px 0 0!important}
+#inCurtain{right:auto!important;left:.25em;transform-origin:top left}
 </style>
 </head>
 <body>
@@ -349,7 +350,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="street"></div>
     <div class="curtain" id="inCurtain"></div>
     <div id="inArea" aria-label="Curtain: drag left to close"></div>
-    <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom));left:42%">( ← Pull the curtain closed )</div>
+    <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom));left:66%;max-width:62vw">( Pull the curtain closed → )</div>
   </section>
 
   <!-- 3. the booth interior: no selfie, just dark glass -->
@@ -472,18 +473,18 @@ function closeSheet(){$('#sheet').classList.remove('on');booth.lock(false);if(wa
 $('#sheetClose').addEventListener('click',closeSheet);
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet();});
 function stepIn(){audio();startHum();sfx.swish();booth.lock(true);$('#outHint').style.opacity='0';
-  booth.zoomTo('door',()=>{show('inside');setCurtain($('#inCurtain'),.14,2.6,4.6);setTimeout(()=>{booth.zoomOut();booth.lock(false);booth.setOpen(.45);curtainOpen=false;$('#outHint').textContent='( Pull the curtain open → )';$('#outHint').style.opacity='1';},800);});}
+  booth.zoomTo('door',()=>{show('inside');setCurtain($('#inCurtain'),.3,2.6,4.6);setTimeout(()=>{booth.zoomOut();booth.lock(false);booth.setOpen(.45);curtainOpen=false;$('#outHint').textContent='( Pull the curtain open → )';$('#outHint').style.opacity='1';},800);});}
 function setCurtain(el,f,pwMin,pwMax){el.style.width=(f*100)+'%';el.style.setProperty('--pw',(pwMin+(pwMax-pwMin)*f)+'em');}
 function animTo(el,from,to,ms,apply,done){const t0=performance.now();(function st(t){const k=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-k,3);apply(from+(to-from)*e);if(k<1)requestAnimationFrame(st);else done&&done();})(t0);}
 
 /* inside curtain: drag left to close */
-(function(){const a=$('#inArea'),ic=$('#inCurtain');let sx=null,f0=.14,f=.14;
-  const ap=v=>{f=v;setCurtain(ic,v,2.6,4.6);$('#inside .street').style.opacity=String(1-((v-.14)/.86)*.9);};
+(function(){const a=$('#inArea'),ic=$('#inCurtain');let sx=null,f0=.3,f=.3;
+  const ap=v=>{f=v;setCurtain(ic,v,2.6,4.6);$('#inside .street').style.opacity=String(1-((v-.3)/.7)*.9);};
   a.addEventListener('pointerdown',e=>{audio();ic.classList.remove('invite');sx=e.clientX;f0=f;try{a.setPointerCapture(e.pointerId);}catch(_){}sfx.rings();});
-  a.addEventListener('pointermove',e=>{if(sx==null)return;ap(Math.max(.14,Math.min(1,f0-(e.clientX-sx)/innerWidth)));});
-  const up=()=>{if(sx==null)return;sx=null;if(f>.55){animTo(ic,f,1,380,ap,enterBooth);}else animTo(ic,f,.14,380,ap,()=>ic.classList.add('invite'));};
+  a.addEventListener('pointermove',e=>{if(sx==null)return;ap(Math.max(.3,Math.min(1,f0+(e.clientX-sx)/innerWidth)));});
+  const up=()=>{if(sx==null)return;sx=null;if(f>.55){animTo(ic,f,1,380,ap,enterBooth);}else animTo(ic,f,.3,380,ap,()=>ic.classList.add('invite'));};
   a.addEventListener('pointerup',up);a.addEventListener('pointercancel',up);
-  window.__resetIn=()=>{ap(.14);ic.classList.add('invite');$('#inHint').style.opacity='1';};ic.classList.add('invite');})();
+  window.__resetIn=()=>{ap(.3);ic.classList.add('invite');$('#inHint').style.opacity='1';};ic.classList.add('invite');})();
 async function enterBooth(){muffle(true);sfx.clunk();$('#inHint').style.opacity='0';await wait(500);show('booth');startCamera();}
 
 /* ---------- booth ---------- */

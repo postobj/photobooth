@@ -462,7 +462,7 @@ function muffle(on){if(humF&&ac)humF.frequency.setTargetAtTime(on?180:900,ac.cur
 function burst(dur,freq,q,vol,type){const a=audio();if(!a)return;const s=a.createBufferSource();s.buffer=noiseBuf(dur);const f=a.createBiquadFilter();f.type=type||'bandpass';f.frequency.value=freq;f.Q.value=q||1;const g=a.createGain();g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);s.connect(f);f.connect(g);g.connect(out());s.start();}
 function tone(f0,f1,dur,vol,type){const a=audio();if(!a)return;const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,a.currentTime);o.frequency.exponentialRampToValueAtTime(f1,a.currentTime+dur);g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);o.connect(g);g.connect(out());o.start();o.stop(a.currentTime+dur);}
 function buzz(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
-const sfxKeep=new Set(['rings','flash']);
+const sfxKeep=new Set(['rings','flash','drip','clunk']);
 const sfx={ // kept quiet and soft: felt more than heard
   // curtain: metal rings sliding along the rod, a soft fabric swish under them
   rings(){let t=0;for(let i=0;i<6;i++){t+=45+Math.random()*40;const v=1-i/8;setTimeout(()=>{const f=2300+Math.random()*700;tone(f,f*.98,.07,.0022*v);},t);}

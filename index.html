@@ -730,7 +730,7 @@ async function openStrip(id){
   cur=await get(id);if(!cur)return;
   $('#viewImg').src=cur.img;$('#card').classList.remove('flip');
   const d=new Date(cur.date),ds=d.toLocaleDateString('de-DE')+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-  $('#stamp').innerHTML=(cur.place||'').replace(/</g,'&lt;').split(' · ').join('<br>')+'<br>'+ds.split(' · ').join('<br>');$('#viewPlace').textContent=cur.place;$('#viewDate').textContent=d.toLocaleDateString('de-DE');
+  $('#stamp').innerHTML=(cur.place||'').replace(/</g,'&lt;').split(' · ').join('<br>')+'<br>'+ds.split(' · ').join('<br>');$('#viewPlace').textContent=cur.place;$('#viewDate').textContent=ds;
   $('#note').value=cur.note||'';const bk=document.querySelector('.face.back');bk.classList.toggle('hasImg',!!cur.backImg);bk.style.setProperty('--bimg',cur.backImg?`url(${cur.backImg})`:'none');
   cur.no=await stripNo(cur.id);$('#stripTitle').textContent=stripName(cur)+'  ✎';show('view');
 }
@@ -821,7 +821,7 @@ $('#flipBtn2').addEventListener('click',()=>{flipCard();});
 $('#note').addEventListener('click',e=>{e.stopPropagation();openWrite();});
 function openWrite(){if(!cur)return;const o=document.createElement('div');o.className='writeSheet';
   const d=new Date(cur.date);
-  o.innerHTML=`<div class="paper"><div class="stampLine">${(cur.place||'').replace(/</g,'&lt;')} · ${d.toLocaleDateString('de-DE')}</div><textarea maxlength="180" placeholder="write something on the back…"></textarea><div class="count"></div></div><div class="row"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Done</button></div>`;
+  o.innerHTML=`<div class="paper"><div class="stampLine">${(cur.place||'').replace(/</g,'&lt;')} · ${d.toLocaleDateString('de-DE')+' · '+new Date(cur.date).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</div><textarea maxlength="180" placeholder="write something on the back…"></textarea><div class="count"></div></div><div class="row"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Done</button></div>`;
   document.body.appendChild(o);try{window.__wp=window.__wp||perfPaper(560,560).toDataURL('image/png');o.querySelector('.paper').style.backgroundImage=`url(${window.__wp})`;}catch(e){}const t=o.querySelector('textarea'),cn=o.querySelector('.count');t.value=cur.note||'';
   const upd=()=>cn.textContent=t.value.length+' / 180';upd();t.addEventListener('input',upd);
   setTimeout(()=>{o.classList.add('on');t.focus();},20);
@@ -835,7 +835,7 @@ async function shareImage(){ // only the strip; with a note, front and back side
   x.fillStyle='#1a1715';x.fillRect(0,0,c.width,c.height);x.drawImage(im,gap,gap);
   if(!note)return new Promise(r=>c.toBlob(r,'image/jpeg',.9));
   x.drawImage(perfPaper(W,H),W+gap*2,gap);x.fillStyle='#6d5b45';x.font='22px "DM Mono",monospace';
-  const d=new Date(cur.date);x.fillText(cur.place.toUpperCase(),W+gap*2+30,gap+60);x.fillText(d.toLocaleDateString('de-DE'),W+gap*2+30,gap+95);
+  const d=new Date(cur.date);x.fillText(cur.place.toUpperCase(),W+gap*2+30,gap+60);x.fillText(d.toLocaleDateString('de-DE')+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}),W+gap*2+30,gap+95);
   x.fillStyle='#3b2f22';x.font='30px "Homemade Apple",cursive';wrap(x,note,W+gap*2+30,gap+190,W-60,64);
   return new Promise(r=>c.toBlob(r,'image/jpeg',.9));
 }

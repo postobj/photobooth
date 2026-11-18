@@ -499,7 +499,7 @@ let waiting=false,curtainOpen=false,stripReady=false;
 const booth=window.mountBooth3($('#stage3d'),{
   canDrag:()=>!waiting,
   onDrag:()=>{},
-  onRelease:(o,start)=>{audio();sfx.rings();if(!waiting&&(o<.38||(start!=null&&o<start-.12))){booth.setOpen(.14);curtainOpen=true;setTimeout(stepIn,350);return;}
+  onRelease:(o,start)=>{if(waiting){booth.setOpen(.45);return;}audio();sfx.rings();if(!waiting&&(o<.38||(start!=null&&o<start-.12))){booth.setOpen(.14);curtainOpen=true;setTimeout(stepIn,350);return;}
     booth.setOpen(o);curtainOpen=false;$('#outHint').textContent='( Pull the curtain open → )';},
   onTap:(what)=>{audio();
     if(what==='sign'){renameBooth();return;}
@@ -512,6 +512,7 @@ const booth=window.mountBooth3($('#stage3d'),{
 });
 function openSheet(what){booth.lock(true);booth.zoomTo(what);$('#sheetInfo').style.display=what==='info'?'':'none';$('#sheetOut').style.display=what==='out'?'':'none';setTimeout(()=>$('#sheet').classList.add('on'),350);}
 function closeSheet(){$('#sheet').classList.remove('on');booth.lock(false);if(waiting&&$('#out').classList.contains('zoomed'))booth.zoomTo('slot');else booth.zoomOut();}
+function curtainHint(){const h=$('#outHint');if(waiting){waitZoom($('#out').classList.contains('zoomed'));return;}h.classList.remove('near');h.textContent='( Pull the curtain open → )';h.style.opacity='1';}
 function waitZoom(on){const o=$('#out'),h=$('#outHint');o.classList.toggle('zoomed',on);if(on){booth.zoomTo('slot');}else{booth.zoomOut();}
   h.style.opacity='1';if(stripReady){h.textContent=on?'( Tap the strip to take your photos )':'( Your strip is ready · tap the blue panel )';h.classList.toggle('near',on);}
   else{h.textContent=on?'':'( Tap the blue panel to look )';h.classList.remove('near');if(on)h.style.opacity='0';}}
@@ -619,7 +620,7 @@ function drawIcon(p,ready){const c=document.createElement('canvas');c.width=c.he
   x.fillStyle='#333';for(let i=0;i<4;i++)x.fillRect(27.5,16.5+i*8.3,9,6.5);
   document.getElementById('favicon').href=c.toDataURL('image/png');}
 function tickWait(){
-  if(!pending)return;const left=Math.max(0,pending.start+WAIT_MS-Date.now()),s=Math.ceil(left/1000);
+  if(!pending)return;if(/curtain/i.test($('#outHint').textContent))curtainHint();const left=Math.max(0,pending.start+WAIT_MS-Date.now()),s=Math.ceil(left/1000);
   $('#timeT').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');tabStatus(left);$('#timeBar').style.width=(100*(1-left/WAIT_MS))+'%';
   if(motor&&ac)motor.g.gain.value=.015+.015*(1-left/WAIT_MS);
   if(left<=0){clearInterval(waitTimer);deliver();}

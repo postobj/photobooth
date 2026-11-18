@@ -337,7 +337,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .nameSheet.clear{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;align-items:flex-end;padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .stepOut{position:absolute;left:18px;bottom:calc(30px + env(safe-area-inset-bottom));z-index:8;font-size:9px;letter-spacing:.2em;text-transform:uppercase;background:none;border:1px solid rgba(28,28,27,.35);border-radius:999px;padding:7px 11px;color:rgba(28,28,27,.7);cursor:pointer}
 .stepOut.dark{border-color:rgba(207,202,192,.35);color:rgba(207,202,192,.7)}
-#inside .stepOut{top:calc(16px + env(safe-area-inset-top));bottom:auto;left:auto;right:18px}
+#inside .stepOut{top:calc(16px + env(safe-area-inset-top));bottom:auto;left:18px;right:auto}
 #booth.lit .stepOut{display:none}
 .nameSheet form div .btn{white-space:nowrap}
 </style>
@@ -394,7 +394,6 @@ button{font:inherit;color:inherit;cursor:pointer}
     </div>
     <i class="softbox l"></i><i class="softbox r"></i>
     <div class="camrow"><svg viewBox="0 0 30 24"><path d="M8 20c-3-2-3-7 1-9M7 6l2 5-5 1"/></svg><svg viewBox="0 0 30 24"><rect x="3" y="6" width="24" height="15" rx="2"/><circle cx="15" cy="13.5" r="4.5"/><path d="M10 6l2-3h6l2 3"/></svg><svg viewBox="0 0 30 24"><path d="M15 20V6M10 10l5-5 5 5"/></svg></div>
-    <button class="link stepOut dark" data-out="1">← Step out</button>
     <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
     <button id="lamp" aria-label="Press to start" disabled><span>PRESS</span></button>
     <div class="hint" id="boothHint">Press the green button</div>

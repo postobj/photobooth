@@ -335,6 +335,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .stickFab .lab{font-size:5.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:1px}
 #out.waiting .stickFab{opacity:.0;pointer-events:none}
 .nameSheet.clear{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;align-items:flex-end;padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.stepOut{position:absolute;top:calc(16px + env(safe-area-inset-top));left:18px;z-index:8;font-size:10px;letter-spacing:.2em;text-transform:uppercase;background:var(--bg);border:1px solid #1c1c1b;border-radius:999px;padding:8px 12px;color:#1c1c1b;cursor:pointer}
+.stepOut.dark{background:none;border-color:#6b675f;color:#cfcac0}
+#booth.lit .stepOut{display:none}
 </style>
 </head>
 <body>
@@ -372,7 +375,8 @@ button{font:inherit;color:inherit;cursor:pointer}
   <section class="scene" id="inside">
     <div class="street"></div>
     <div class="curtain" id="inCurtain"></div>
-    <div id="inArea" aria-label="Curtain: drag left to close"></div>
+    <div id="inArea" aria-label="Curtain: drag to close"></div>
+    <button class="link stepOut" data-out="1">← Step out</button>
     <div class="hint" id="inHint" style="bottom:calc(30px + env(safe-area-inset-bottom));left:62%;white-space:nowrap">( Close the curtain → )</div>
   </section>
 
@@ -388,6 +392,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     </div>
     <i class="softbox l"></i><i class="softbox r"></i>
     <div class="camrow"><svg viewBox="0 0 30 24"><path d="M8 20c-3-2-3-7 1-9M7 6l2 5-5 1"/></svg><svg viewBox="0 0 30 24"><rect x="3" y="6" width="24" height="15" rx="2"/><circle cx="15" cy="13.5" r="4.5"/><path d="M10 6l2-3h6l2 3"/></svg><svg viewBox="0 0 30 24"><path d="M15 20V6M10 10l5-5 5 5"/></svg></div>
+    <button class="link stepOut dark" data-out="1">← Step out</button>
     <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
     <button id="lamp" aria-label="Press to start" disabled><span>PRESS</span></button>
     <div class="hint" id="boothHint">Press the green button</div>
@@ -845,6 +850,10 @@ async function openArchive(month,open){
 }
 function drawMute(){const on='<svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2z"/><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5M13.5 3.5a6 6 0 0 1 0 9"/></svg>',off='<svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2z"/><path d="M11.5 6l3.5 4M15 6l-3.5 4"/></svg>';document.querySelectorAll('.muteBtn').forEach(b=>{b.innerHTML=muted?off:on;b.setAttribute('aria-label',muted?'Sound off, tap to turn on':'Sound on, tap to turn off');});}
 document.querySelectorAll('.muteBtn').forEach(b=>b.addEventListener('click',()=>{muted=!muted;try{localStorage.setItem('pb-muted',muted?'1':'0');}catch(e){}if(master)master.gain.value=muted?0:1;drawMute();}));drawMute();
+function stepOut(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}stopHum();muffle(false);sfx.rings();
+  window.__resetIn&&window.__resetIn();show('out');booth.zoomOut();booth.lock(false);booth.setOpen(.45);curtainOpen=false;
+  $('#outHint').classList.remove('near');$('#outHint').textContent='( Pull the curtain open → )';$('#outHint').style.opacity='1';}
+document.querySelectorAll('[data-out]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();stepOut();}));
 $('#outHint').addEventListener('click',()=>{audio();if(waiting){if(stripReady)takeStrip();return;}booth.setOpen(.14);curtainOpen=true;sfx.rings();setTimeout(stepIn,450);});
 $('#toArchive').addEventListener('click',()=>$('#viewClose').click());
 $('#viewClose').addEventListener('click',()=>{$('#note').blur();window.__lastStrip=cur&&cur.id;openArchive(cur?mKey(cur.date):undefined,true);});

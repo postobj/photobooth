@@ -959,6 +959,7 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 
 (async()=>{const p=await get('pending');if(p)startWaiting();})();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pending)tickWait();});
+document.querySelectorAll('.cloudBtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();cloudTap();}));
 initCloud();
 window.__pb={get sb(){return sb},get user(){return sbUser}};
 })();

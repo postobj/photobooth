@@ -274,7 +274,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #arch .stage.instant *{transition:none!important}
 .back .flipback{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
 
-#arch .inside button{touch-action:none;user-select:none;-webkit-user-select:none}
+#arch .inside button{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #arch .inside img{pointer-events:none;-webkit-user-drag:none}
 #arch .inside button.dragging{z-index:5;transition:none!important;cursor:grabbing}
 #arch .inside button.dragging img{box-shadow:0 18px 30px rgba(0,0,0,.3)}
@@ -340,6 +340,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #inside .stepOut{top:calc(16px + env(safe-area-inset-top));bottom:auto;left:18px;right:auto}
 #booth.lit .stepOut{display:none}
 .nameSheet form div .btn{white-space:nowrap}
+#arch .inside button.held img{transform:scale(1.06);box-shadow:0 10px 20px rgba(0,0,0,.18)}
 </style>
 </head>
 <body>
@@ -453,12 +454,15 @@ function out(){return master||ac.destination;}
 function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.gain.value=muted?0:1;master.connect(ac.destination);}catch(e){}}if(ac&&ac.state==='suspended')ac.resume();return ac;}
 function noiseBuf(sec){const a=audio();const b=a.createBuffer(1,a.sampleRate*sec,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;return b;}
 function stopHum(){if(hum){try{hum.o.stop();hum.o2.stop();}catch(e){}hum=null;}}
-function startHum(){const a=audio();if(!a||hum)return;const o=a.createOscillator(),o2=a.createOscillator(),g=a.createGain();humF=a.createBiquadFilter();humF.type='lowpass';humF.frequency.value=900;
+function startHum(){return;
+}
+function _startHumOld(){const a=audio();if(!a||hum)return;const o=a.createOscillator(),o2=a.createOscillator(),g=a.createGain();humF=a.createBiquadFilter();humF.type='lowpass';humF.frequency.value=900;
   o.frequency.value=50;o2.frequency.value=100;o2.type='sine';g.gain.value=.004;o.connect(g);o2.connect(g);g.connect(humF);humF.connect(out());o.start();o2.start();hum={o,o2,g};}
 function muffle(on){if(humF&&ac)humF.frequency.setTargetAtTime(on?180:900,ac.currentTime,.4);}
 function burst(dur,freq,q,vol,type){const a=audio();if(!a)return;const s=a.createBufferSource();s.buffer=noiseBuf(dur);const f=a.createBiquadFilter();f.type=type||'bandpass';f.frequency.value=freq;f.Q.value=q||1;const g=a.createGain();g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);s.connect(f);f.connect(g);g.connect(out());s.start();}
 function tone(f0,f1,dur,vol,type){const a=audio();if(!a)return;const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,a.currentTime);o.frequency.exponentialRampToValueAtTime(f1,a.currentTime+dur);g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);o.connect(g);g.connect(out());o.start();o.stop(a.currentTime+dur);}
 function buzz(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+const sfxKeep=new Set(['rings','flash']);
 const sfx={ // kept quiet and soft: felt more than heard
   // curtain: metal rings sliding along the rod, a soft fabric swish under them
   rings(){let t=0;for(let i=0;i<6;i++){t+=45+Math.random()*40;const v=1-i/8;setTimeout(()=>{const f=2300+Math.random()*700;tone(f,f*.98,.07,.0022*v);},t);}
@@ -471,6 +475,7 @@ const sfx={ // kept quiet and soft: felt more than heard
   clunk(){tone(70,45,.16,.07);burst(.08,300,1,.04,'lowpass');},
   drip(){tone(1100,800,.1,.02);}
 };
+Object.keys(sfx).forEach(k=>{if(!sfxKeep.has(k))sfx[k]=()=>{};});
 function startMotor(){return; // the developing noise is switched off
   const a=audio();if(!a||motor)return;const s=a.createBufferSource();s.buffer=noiseBuf(2);s.loop=true;const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=220;f.Q.value=.8;const g=a.createGain();g.gain.value=.015;
   const lfo=a.createOscillator(),lg=a.createGain();lfo.frequency.value=1.3;lg.gain.value=.007;lfo.connect(lg);lg.connect(g.gain);s.connect(f);f.connect(g);g.connect(out());s.start();lfo.start();motor={s,lfo,g};}
@@ -822,9 +827,12 @@ async function openArchive(month,open){
     A.querySelectorAll('.inside button').forEach(b=>{
       let d=null;
       b.addEventListener('click',e=>e.preventDefault());
-      b.addEventListener('pointerdown',e=>{if(!archOpen)return;d={x:e.clientX,y:e.clientY,moved:false};try{b.setPointerCapture(e.pointerId);}catch(_){}
-        const r=b.getBoundingClientRect();d.gx=e.clientX-r.left;d.gy=e.clientY-r.top;});
+      b.addEventListener('pointerdown',e=>{if(!archOpen)return;d={x:e.clientX,y:e.clientY,moved:false,armed:e.pointerType==='mouse',id:e.pointerId};
+        const r=b.getBoundingClientRect();d.gx=e.clientX-r.left;d.gy=e.clientY-r.top;
+        if(!d.armed)d.t=setTimeout(()=>{if(d){d.armed=true;b.classList.add('held');try{b.setPointerCapture(d.id);}catch(_){}buzz(8);}},300);else{try{b.setPointerCapture(e.pointerId);}catch(_){}}});
+      b.addEventListener('touchmove',e=>{if(d&&d.armed)e.preventDefault();},{passive:false});
       b.addEventListener('pointermove',e=>{if(!d)return;
+        if(!d.armed){if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>8){clearTimeout(d.t);d=null;}return;}
         if(!d.moved&&Math.hypot(e.clientX-d.x,e.clientY-d.y)>8){d.moved=true;b.classList.add('dragging');box.classList.add('sorting');}
         if(!d.moved)return;
         const k=st.getBoundingClientRect().width/300||1;
@@ -834,7 +842,7 @@ async function openArchive(month,open){
           box.insertBefore(b,after?t.nextSibling:t);}
         b.style.transform='none';const r=b.getBoundingClientRect();
         b.style.transform=`translate(${(e.clientX-d.gx-r.left)/k}px,${(e.clientY-d.gy-r.top)/k}px) scale(1.08)`;});
-      const end=async e=>{if(!d)return;const was=d.moved;d=null;b.classList.remove('dragging');box.classList.remove('sorting');b.style.transform='';
+      const end=async e=>{if(!d)return;clearTimeout(d.t);const was=d.moved;d=null;b.classList.remove('dragging','held');box.classList.remove('sorting');b.style.transform='';
         const fr=st.getBoundingClientRect();if(was&&(e.clientY<fr.top+10||e.clientY>fr.bottom-10||e.clientX<fr.left||e.clientX>fr.right)){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),400);return;}
         if(was){sfx.swish();const ids=[...box.querySelectorAll('button')].map(x=>x.dataset.iid);await put('order:'+archMonth,ids);return;}
         if(e.type==='pointerup'&&archOpen){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),480);}};

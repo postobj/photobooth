@@ -655,7 +655,7 @@ async function navStrip(d){if(!cur)return;const l=(await get('list'))||[];const 
 (function(){let lock=0;const go=d=>{const n=Date.now();if(n<lock||!$('#view').classList.contains('on'))return;lock=n+500;navStrip(d);};
   $('#view').addEventListener('wheel',e=>{if(Math.abs(e.deltaX)>Math.abs(e.deltaY)&&Math.abs(e.deltaX)>25){e.preventDefault();go(e.deltaX>0?1:-1);}},{passive:false});
   addEventListener('keydown',e=>{if(document.activeElement&&/TEXTAREA|INPUT/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1);});
-  const mk=(d,t)=>{const b=document.createElement('button');b.className='navArrow';b.textContent=t;b.setAttribute('aria-label',d>0?'Next strip':'Previous strip');b.style[d>0?'right':'left']='4vw';b.onclick=()=>go(d);$('#view').appendChild(b);};mk(-1,'‹');mk(1,'›');})();
+  const mk=(d,t)=>{const b=document.createElement('button');b.className='navArrow';b.textContent=t;b.setAttribute('aria-label',d>0?'Next strip':'Previous strip');b.style[d>0?'right':'left']='4vw';b.onclick=()=>go(d);$('#view').appendChild(b);};})();
 function flipCard(){const c=$('#card');c.classList.toggle('flip');sfx.swish();if(!c.classList.contains('flip'))$('#note').blur();}
 $('#card').addEventListener('click',e=>{if(e.target.tagName!=='TEXTAREA')flipCard();});
 $('#flipBtn2').addEventListener('click',()=>{flipCard();});

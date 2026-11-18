@@ -525,8 +525,8 @@ async function cloudTap(){if(!sb){toast('Cloud is not reachable');return;}
   const em=await askText('Keep your archive safe. We email you a sign in link, no password.','you@mail.com','email');if(!em)return;
   const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
   if(error){toast(error.message||'Could not send');return;}
-  const code=await askText('Check your mail and tap the Sign in link. Open it in this same browser if you can.','123456','code');if(!code)return;
-  const r=await sb.auth.verifyOtp({email:em,token:code,type:'email'});if(r.error)toast('That code did not work');}
+  const o=document.createElement('div');o.className='nameSheet';o.innerHTML=`<form><label>Check your mail (${em.replace(/</g,'')}) and tap the link. Open it in this same browser if you can.</label><div><button type="submit" class="btn">OK</button></div></form>`;
+  document.body.appendChild(o);setTimeout(()=>o.classList.add('on'),20);o.querySelector('form').onsubmit=e=>{e.preventDefault();o.classList.remove('on');setTimeout(()=>o.remove(),300);};}
 function initCloud(){if(!window.supabase){drawCloud();return;}
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'implicit'}});
   sb.auth.onAuthStateChange((ev,ses)=>{const was=sbUser&&sbUser.id;sbUser=ses?ses.user:null;drawCloud();

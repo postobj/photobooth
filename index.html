@@ -339,6 +339,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .stepOut.dark{border-color:rgba(207,202,192,.35);color:rgba(207,202,192,.7)}
 #inside .stepOut{top:calc(16px + env(safe-area-inset-top));bottom:auto;left:auto;right:18px}
 #booth.lit .stepOut{display:none}
+.nameSheet form div .btn{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -651,10 +652,10 @@ function addFriendStrip(){const i=document.createElement('input');i.type='file';
     const list=(await get('list'))||[];list.unshift({id,date:item.date});await put('list',list);await put(id,item);
     window.__lastStrip=id;sfx.swish();toast('Added to your archive');openArchive(mKey(item.date),true);
   }catch(e){toast('Could not read that image');}};i.click();}
-function confirmSheet(msg,yes,cls){return new Promise(res=>{const o=document.createElement('div');o.className='nameSheet'+(cls?' '+cls:'');
-  o.innerHTML=`<form><label>${msg}</label><div><button type="button" class="btn ghost">Keep it</button><button type="submit" class="btn">${yes}</button></div></form>`;
+function confirmSheet(msg,yes,cls,keepFirst){return new Promise(res=>{const o=document.createElement('div');o.className='nameSheet'+(cls?' '+cls:'');
+  o.innerHTML=keepFirst?`<form><label>${msg}</label><div><button type="submit" class="btn ghost yes">${yes}</button><button type="button" class="btn keep">Keep it</button></div></form>`:`<form><label>${msg}</label><div><button type="button" class="btn ghost keep">Keep it</button><button type="submit" class="btn">${yes}</button></div></form>`;
   document.body.appendChild(o);setTimeout(()=>o.classList.add('on'),20);const done=v=>{o.classList.remove('on');setTimeout(()=>o.remove(),300);res(v);};
-  o.querySelector('.ghost').onclick=()=>done(false);o.addEventListener('click',e=>{if(e.target===o)done(false);});o.querySelector('form').onsubmit=e=>{e.preventDefault();done(true);};});}
+  o.querySelector('.keep').onclick=()=>done(false);o.addEventListener('click',e=>{if(e.target===o)done(false);});o.querySelector('form').onsubmit=e=>{e.preventDefault();done(true);};});}
 $('#delBtn').addEventListener('click',async()=>{if(!cur)return;if(!await confirmSheet('Throw this strip away? It cannot be brought back.','Throw away'))return;
   const id=cur.id,m=mKey(cur.date);const l=((await get('list'))||[]).filter(x=>x.id!==id);await put('list',l);await del(id);
   const ord=await get('order:'+m);if(ord)await put('order:'+m,ord.filter(x=>x!==id));cur=null;window.__lastStrip=null;sfx.swish();toast('Thrown away');openArchive(m,true);});
@@ -669,7 +670,7 @@ function makeSticker(im){const S=440,b=22,w=im.width,h=im.height,ar=Math.min(1.5
 async function loadMyStickers(){const l=(await get('myStickers'))||[];let ch=false;l.forEach((st,i)=>{if(!st.id){st.id='u'+i+Date.now();ch=true;}booth.addSticker(st.url,i,st.ar,st.id);});if(ch)await put('myStickers',l);
   ((await get('hiddenStickers'))||[]).forEach(k=>booth.removeSticker(k));}
 async function peelSticker(key){booth.lock(true);booth.zoomAtSticker(key);await wait(900);
-  const ok=await confirmSheet('Peel this sticker off the booth?','Peel off','clear');
+  const ok=await confirmSheet('Peel this sticker off the booth?','Peel off','clear',true)&&await confirmSheet('Are you sure? It will be gone from your booth.','Yes, peel it off','clear',true);
   if(ok){booth.removeSticker(key);sfx.swish();
     if(key.startsWith('ust:')){const l=((await get('myStickers'))||[]).filter(x=>x.id!==key.slice(4));await put('myStickers',l);}
     else{const h=(await get('hiddenStickers'))||[];h.push(key);await put('hiddenStickers',h);}}

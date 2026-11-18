@@ -261,7 +261,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 #arch .stage.isopen .cover{transform:rotateY(-155deg);opacity:.4;pointer-events:auto;cursor:pointer}
 #arch .inside{z-index:3}
 #arch .stage.isopen .clip,#arch .stage.isopen .binder,#arch .stage.isopen .edges{opacity:0;transition:opacity .35s}
-#arch .stage.isopen .peek{opacity:0;transform:translateY(-30px) rotate(var(--r));pointer-events:none;transition:opacity .45s,transform .6s}
+#arch .stage.isopen .peek{opacity:0;pointer-events:none;transition:opacity .25s}
+#arch .stage:not(.isopen) .peek{transition:opacity .4s .7s,transform .7s cubic-bezier(.2,.8,.2,1)}
 #arch .inside{position:absolute;left:12px;right:12px;top:14px;bottom:14px;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px 10px;align-content:start;padding:8px 4px;pointer-events:none}
 #arch .inside button{background:none;border:0;padding:0;font:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;opacity:0;transform:translateY(16px);transition:opacity .6s var(--d,0ms),transform .7s cubic-bezier(.2,.8,.2,1) var(--d,0ms)}
 #arch .inside img{width:100%;max-width:64px;box-shadow:0 6px 12px rgba(0,0,0,.16);transition:transform .4s}
@@ -711,7 +712,7 @@ async function openArchive(month,open){
     const chipLab=x=>{const k=dk(x),l=perDay[k];return l.length>1?k+' · '+(l.indexOf(x.id)+1):k;};
     const chips=cur.length>1?`<div class="days">${cur.slice(0,8).map(x=>`<button data-did="${x.id}">${chipLab(x)}</button>`).join('')}</div>`:'';
     A.innerHTML=mo+`<div class="stage" id="archStage">${h}</div>`+chips+`<div class="openHint">${cur.length?'<button id="archOpenBtn">( Tap to open )</button>':''}${more>0?`<button class="ghost" id="archMoreBtn">+ ${more} earlier</button>`:''}</div>`;
-    const fit=()=>{const st=$('#archStage');if(!st)return;const k=Math.max(.6,Math.min(1.1,(innerWidth-60)/300,(innerHeight-360)/500));st.style.transform=`translate(-50%,-50%) scale(${k})`;};fit();window.onresize=fit;
+    const fit=()=>{const st=$('#archStage');if(!st)return;const k=Math.max(.7,Math.min(1.6,(innerWidth-24)/300,(innerHeight-230)/520));st.style.transform=`translate(-50%,-50%) scale(${k})`;};fit();window.onresize=fit;
     const st=$('#archStage'),hintB=$('#archOpenBtn');let lifted=null;
     const mark=id=>{A.querySelectorAll('.days button').forEach(e=>e.classList.toggle('on',e.dataset.did===id));A.querySelectorAll('.inside button').forEach(e=>e.classList.toggle('on',e.dataset.iid===id));};
     const scrollIn=(id,smooth)=>{const box=A.querySelector('.inside'),el=box&&box.querySelector(`[data-iid="${id}"]`);if(el)box.scrollTo({top:Math.max(0,el.offsetTop-12),behavior:smooth?'smooth':'auto'});};

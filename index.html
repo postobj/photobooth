@@ -725,7 +725,14 @@ async function openArchive(month,open){
       if(lifted===id){sfx.swish();setOpen(true);return;}
       lifted=id;sfx.swish();A.querySelectorAll('.peek').forEach(e=>{e.classList.toggle('up',e.dataset.pid===id);e.classList.toggle('dim',e.dataset.pid!==id);});mark(id);
       if(hintB)hintB.textContent='( Tap again to open )';};
-    A.querySelectorAll('.peek').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();lift(b.dataset.pid);}));
+    A.querySelectorAll('.peek').forEach(b=>{let y0=null,pulled=false;
+      b.addEventListener('pointerdown',e=>{y0=e.clientY;pulled=false;try{b.setPointerCapture(e.pointerId);}catch(_){}});
+      b.addEventListener('pointermove',e=>{if(y0==null)return;const dy=Math.min(0,e.clientY-y0);if(dy<-8){pulled=true;b.style.transition='none';b.style.transform=`translateY(${dy/(st.getBoundingClientRect().width/300)}px) rotate(0deg)`;}});
+      b.addEventListener('pointerup',e=>{const dy=e.clientY-(y0??e.clientY);y0=null;b.style.transition='';
+        if(pulled&&dy<-90){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.pid),420);return;}
+        b.style.transform='';if(!pulled)lift(b.dataset.pid);});
+      b.addEventListener('click',e=>e.stopPropagation());
+      b.style.touchAction='none';});
     A.querySelectorAll('.days button').forEach(b=>b.addEventListener('click',()=>lift(b.dataset.did)));
     // inside the open folder: tap a strip to look, drag it to change its place
     const box=A.querySelector('.inside');
@@ -745,6 +752,7 @@ async function openArchive(month,open){
         b.style.transform='none';const r=b.getBoundingClientRect();
         b.style.transform=`translate(${(e.clientX-d.gx-r.left)/k}px,${(e.clientY-d.gy-r.top)/k}px) scale(1.08)`;});
       const end=async e=>{if(!d)return;const was=d.moved;d=null;b.classList.remove('dragging');box.classList.remove('sorting');b.style.transform='';
+        const fr=st.getBoundingClientRect();if(was&&(e.clientY<fr.top+10||e.clientY>fr.bottom-10||e.clientX<fr.left||e.clientX>fr.right)){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),400);return;}
         if(was){sfx.swish();const ids=[...box.querySelectorAll('button')].map(x=>x.dataset.iid);await put('order:'+archMonth,ids);return;}
         if(e.type==='pointerup'&&archOpen){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),480);}};
       b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);

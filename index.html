@@ -332,6 +332,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .stickBtn{width:22px;height:18px;padding:0;border:0;background:none;opacity:.7;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .stickBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .stickFab{position:absolute;left:16px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:6;width:44px;height:44px;border-radius:46% 54% 50% 50%/52% 48% 52% 48%;background:#fff;border:1.5px dashed #1c1c1b;box-shadow:0 0 0 5px #fff,0 6px 14px rgba(0,0,0,.12);transform:rotate(-8deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;font-family:"DM Mono",monospace;color:#1c1c1b;transition:transform .25s}
+@media (min-aspect-ratio:1/1){.stickFab{left:max(16px,calc(50% - 31vh - 70px));bottom:calc(16vh + 20px)}}
 .stickFab:active{transform:rotate(-8deg) scale(.94)}
 .stickFab .plus{font-size:18px;line-height:1;font-weight:300}
 .stickFab .lab{font-size:5.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:1px}

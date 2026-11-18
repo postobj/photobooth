@@ -24,7 +24,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .scene.on{opacity:1;pointer-events:auto}
 .lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase}
 .cloudBtn{display:inline-flex;align-items:center;background:none;border:1px dashed currentColor;border-radius:20px;padding:5px 10px;color:inherit;cursor:pointer;font-family:inherit;opacity:.75}.cloudBtn.in{border-style:solid;opacity:.55}
-.top{position:absolute;top:calc(16px + env(safe-area-inset-top));left:18px;right:18px;display:flex;justify-content:space-between;gap:16px;align-items:center;z-index:6}
+.top{position:absolute;top:calc(26px + env(safe-area-inset-top));left:max(28px,4vw);right:max(28px,4vw);display:flex;justify-content:space-between;gap:16px;align-items:center;z-index:6}
 .bottom{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 20px);box-sizing:border-box;padding:12px 26px;border-radius:999px;background:var(--bg);bottom:calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:center;align-items:center;z-index:6}
 .link{background:none;border:0;padding:6px 0;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
 .link.on{color:var(--ink);border-bottom:1px solid var(--ink)}
@@ -177,7 +177,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 #stage3d{position:absolute;inset:0;touch-action:none}
 #stage3d canvas{display:block}
-#out .bar{position:absolute;top:calc(16px + env(safe-area-inset-top));left:16px;right:16px;display:flex;justify-content:space-between;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#3a3935;z-index:6;pointer-events:none}
+#out .bar{position:absolute;top:calc(26px + env(safe-area-inset-top));left:max(28px,4vw);right:max(28px,4vw);display:flex;justify-content:space-between;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#3a3935;z-index:6;pointer-events:none}
 #out .hint{background:var(--bg);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);border:1px solid var(--ink);padding:9px 16px;border-radius:999px;bottom:calc(92px + env(safe-area-inset-bottom));top:auto!important}
 #timer{bottom:calc(92px + env(safe-area-inset-bottom));top:auto!important}
 #sheet{background:linear-gradient(transparent 30%,rgba(243,242,239,.85) 62%);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);justify-content:flex-end;padding:24px 24px calc(110px + env(safe-area-inset-bottom))}
@@ -312,9 +312,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .btn.icon{width:44px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .btn.icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .back{padding:26px 22px 22px!important;gap:6px!important;overflow:hidden}
-.back .stamp{font-size:6.5px!important;letter-spacing:.08em!important;line-height:1.6!important;overflow-wrap:anywhere;padding-bottom:5px!important}
-.back textarea{height:auto!important;flex:1 1 auto!important;min-height:0;font-size:8px!important;line-height:1.75!important}
-.back .flipback{flex:none!important;font-size:6.5px!important;padding:5px 0 0!important}
+.back .stamp{font-size:9px!important;letter-spacing:.08em!important;line-height:1.6!important;overflow-wrap:anywhere;padding-bottom:5px!important}
+.back textarea{height:auto!important;flex:1 1 auto!important;min-height:0;font-size:13px!important;line-height:1.55!important}
+.back .flipback{flex:none!important;font-size:9px!important;padding:5px 0 0!important}
 #inCurtain{right:auto!important;left:.25em;transform-origin:top left}
 #arch .days{display:none!important}
 .face.back.hasImg{background-image:var(--bimg)!important;background-size:100% 100%!important}
@@ -332,6 +332,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .stickBtn{width:22px;height:18px;padding:0;border:0;background:none;opacity:.7;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .stickBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .stickFab{position:absolute;left:16px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:6;width:44px;height:44px;border-radius:46% 54% 50% 50%/52% 48% 52% 48%;background:#fff;border:1.5px dashed #1c1c1b;box-shadow:0 0 0 5px #fff,0 6px 14px rgba(0,0,0,.12);transform:rotate(-8deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;font-family:"DM Mono",monospace;color:#1c1c1b;transition:transform .25s}
+@media (min-aspect-ratio:1/1){.stickFab{scale:.55}}
 .stickFab:active{transform:rotate(-8deg) scale(.94)}
 .stickFab .plus{font-size:18px;line-height:1;font-weight:300}
 .stickFab .lab{font-size:5.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:1px}
@@ -522,7 +523,7 @@ function askText(label,ph,type){return new Promise(res=>{const o=document.create
   o.querySelector('.ghost').onclick=()=>done(null);o.querySelector('form').onsubmit=e=>{e.preventDefault();done(i.value.trim());};});}
 async function cloudTap(){if(!sb){toast('Cloud is not reachable');return;}
   if(sbUser){const ok=await confirmSheet('Synced as '+sbUser.email+'. Your strips are kept across devices.','Sign out','clear',true);if(ok){await sb.auth.signOut();}return;}
-  let em=await askText('Keep your archive safe. We email you a code, no password.','you@mail.com','email');if(!em)return;em=em.replace(/\s+/g,'').toLowerCase();
+  let em=await askText('Keep your archive safe. We email you a code, no password.','you@mail.com','email');if(!em)return;em=em.normalize('NFKC').replace(/ı/g,'i').replace(/İ/g,'i').toLowerCase().replace(/[^a-z0-9@._+\-]/g,'');if(!/^[^@]+@[^@]+\.[a-z]{2,}$/.test(em)){toast('That email looks wrong, try again');return;}
   const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
   if(error){const m=String(error.message||'');toast(/rate|limit|seconds/i.test(m)?'Too many mails, try again in a bit':'Could not send: '+m);return;}
   const code=await askText('We sent a code to '+em.replace(/</g,'')+'. Type it here, or tap the link in the mail.','123456','code');if(!code)return;
@@ -711,7 +712,7 @@ function tickWait(){
 async function deliver(){notifyReady();if(!$('#out').classList.contains('on')){document.querySelectorAll('.nameSheet,.writeSheet,.zoomView').forEach(e=>e.remove());show('out');}if(!$('#out').classList.contains('zoomed'))waitZoom(true);
   stopMotor();sfx.clunk();$('#timer').classList.remove('on');$('#skip').style.display='none';
   await wait(300);booth.dropStrip();await wait(2400);sfx.drip();stripReady=true;booth.setDance(false);
-  waitZoom(true);
+  if(!$('#out').classList.contains('zoomed'))waitZoom(true);
 }
 $('#skip').addEventListener('click',()=>{if(pending){pending.start=Date.now()-WAIT_MS+1200;put('pending',pending);}});
 async function takeStrip(){

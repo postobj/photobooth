@@ -23,7 +23,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .scene{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .7s ease}
 .scene.on{opacity:1;pointer-events:auto}
 .lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase}
-.cloudBtn{background:none;border:1px dashed currentColor;border-radius:20px;padding:5px 10px;color:inherit;cursor:pointer;font-family:inherit;opacity:.75}.cloudBtn.in{border-style:solid;opacity:.55}
+.cloudBtn{display:inline-flex;align-items:center;background:none;border:1px dashed currentColor;border-radius:20px;padding:5px 10px;color:inherit;cursor:pointer;font-family:inherit;opacity:.75}.cloudBtn.in{border-style:solid;opacity:.55}
 .top{position:absolute;top:calc(16px + env(safe-area-inset-top));left:18px;right:18px;display:flex;justify-content:space-between;gap:16px;align-items:center;z-index:6}
 .bottom{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 20px);box-sizing:border-box;padding:12px 26px;border-radius:999px;background:var(--bg);bottom:calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:center;align-items:center;z-index:6}
 .link{background:none;border:0;padding:6px 0;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
@@ -513,7 +513,7 @@ async function fullSync(){if(!sbUser||syncing)return;syncing=true;drawCloud('Syn
     if($('#archive').classList.contains('on'))openArchive();
   }catch(e){console.warn('sync',e);toast('Could not sync right now');}
   syncing=false;drawCloud();}
-function drawCloud(t){document.querySelectorAll('.cloudBtn').forEach(b=>{b.textContent=t||(sbUser?'☁ Synced':'☁ Keep it safe');b.classList.toggle('in',!!sbUser);});}
+function drawCloud(t){document.querySelectorAll('.cloudBtn').forEach(b=>{const ic='<svg viewBox="0 0 20 14" width="16" height="11" style="vertical-align:-1px;margin-right:6px" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M5.5 12.5h9a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 5.3 4.6 4 4 0 0 0 5.5 12.5z"/></svg>';b.innerHTML=ic+(t||(sbUser?'Synced':'Keep it safe'));b.classList.toggle('in',!!sbUser);});}
 function askText(label,ph,type){return new Promise(res=>{const o=document.createElement('div');o.className='nameSheet';
   o.innerHTML=`<form><label>${label}</label><input autocomplete="off" spellcheck="false"><div><button type="button" class="btn ghost">Cancel</button><button type="submit" class="btn">OK</button></div></form>`;
   document.body.appendChild(o);const i=o.querySelector('input');i.type=type||'text';i.placeholder=ph||'';if(type==='email')i.autocomplete='email';if(type==='code'){i.type='text';i.inputMode='numeric';i.autocomplete='one-time-code';}

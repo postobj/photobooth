@@ -23,6 +23,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .scene{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .7s ease}
 .scene.on{opacity:1;pointer-events:auto}
 .lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.cloudBtn{background:none;border:1px dashed currentColor;border-radius:20px;padding:5px 10px;color:inherit;cursor:pointer;font-family:inherit;opacity:.75}.cloudBtn.in{border-style:solid;opacity:.55}
 .top{position:absolute;top:calc(16px + env(safe-area-inset-top));left:18px;right:18px;display:flex;justify-content:space-between;gap:16px;align-items:center;z-index:6}
 .bottom{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 20px);box-sizing:border-box;padding:12px 26px;border-radius:999px;background:var(--bg);bottom:calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:center;align-items:center;z-index:6}
 .link{background:none;border:0;padding:6px 0;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
@@ -431,7 +432,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
   <!-- 5. archive -->
   <section class="scene" id="archive">
-    <div class="top" id="archTop"><span class="lbl" id="archLeft">Archive</span><span class="lbl" id="archCount"></span></div>
+    <div class="top" id="archTop"><span class="lbl" id="archLeft">Archive</span><span class="lbl" id="archCount"></span><button class="lbl cloudBtn" type="button"></button></div>
     <div id="arch"></div>
     <div class="bottom" style="position:fixed;left:50%"><div class="tabs"><button class="link off" data-go="out">Booth</button><button class="link on" data-go="archive">Archive</button><button class="link off" disabled style="opacity:.45">Map · soon</button><button class="link muteBtn" aria-label="Sound on or off" title="Sound"></button></div></div>
   </section>
@@ -440,6 +441,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   <div id="toast"></div>
 </div>
 
+<script src="supabase.js?v=2.119"></script>
 <script src="booth3d.js?v=20261118b"></script>
 <script>
 (()=>{
@@ -457,9 +459,78 @@ function updPlace(){PLACE=BOOTH+(CITY?' · '+CITY:'');document.querySelectorAll(
 let dbp=null;
 function db(){if(dbp)return dbp;dbp=new Promise(res=>{try{const r=indexedDB.open('photoautomat',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);}catch(e){res(null);}});return dbp;}
 const mem={};
-async function put(k,v){const d=await db();if(!d){mem[k]=v;return;}return new Promise(r=>{try{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=r;t.onerror=r;}catch(e){mem[k]=v;r();}});}
+async function _put(k,v){const d=await db();if(!d){mem[k]=v;return;}return new Promise(r=>{try{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=r;t.onerror=r;}catch(e){mem[k]=v;r();}});}
 async function get(k){const d=await db();if(!d)return mem[k];return new Promise(r=>{try{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(mem[k]);}catch(e){r(mem[k]);}});}
-async function del(k){const d=await db();delete mem[k];if(!d)return;return new Promise(r=>{try{const t=d.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=r;t.onerror=r;}catch(e){r();}});}
+async function _del(k){const d=await db();delete mem[k];if(!d)return;return new Promise(r=>{try{const t=d.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=r;t.onerror=r;}catch(e){r();}});}
+
+async function put(k,v){await _put(k,v);try{cloudPut(k,v);}catch(e){}}
+async function del(k){await _del(k);try{cloudDel(k);}catch(e){}}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+
+/* ---------------- cloud (Supabase, optional sign in) ---------------- */
+const SB_URL='https://kdtfzwmlqybbhztwbzxo.supabase.co',SB_KEY='sb_publishable_MgbvY6DrPK-nj2X7WAzBeg_yrLFxbD4';
+let sb=null,sbUser=null,syncing=false,remoteImgs=new Set(),prefT=null;
+const PREF_KEYS=k=>k==='list'||k==='boothName'||k==='myStickers'||k==='hiddenStickers'||k.startsWith('pos2:')||k.startsWith('order:');
+const isStrip=v=>v&&typeof v==='object'&&typeof v.img==='string'&&v.id;
+function stripMeta(v){const m={};for(const k in v)if(k!=='img'&&k!=='backImg')m[k]=v[k];m.hasBack=!!v.backImg;return m;}
+async function toBlob(u){return (await fetch(u)).blob();}
+function blobURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=()=>r(null);f.readAsDataURL(b);});}
+async function upStrip(v){if(!sbUser)return;const u=sbUser.id;
+  if(!remoteImgs.has(v.id)){const o={upsert:true,contentType:'image/png'};
+    const a=await sb.storage.from('strips').upload(u+'/'+v.id+'.png',await toBlob(v.img),o);if(a.error)throw a.error;
+    if(v.backImg)await sb.storage.from('strips').upload(u+'/'+v.id+'-back.png',await toBlob(v.backImg),o);
+    remoteImgs.add(v.id);}
+  await sb.from('strips').upsert({id:v.id,meta:stripMeta(v),deleted:false,updated_at:new Date().toISOString()});}
+async function pushPrefs(){if(!sbUser)return;const data={};
+  const d=await db();let keys=[];if(d)keys=await new Promise(r=>{const q=d.transaction('kv').objectStore('kv').getAllKeys();q.onsuccess=()=>r(q.result);q.onerror=()=>r([]);});else keys=Object.keys(mem);
+  for(const k of keys)if(PREF_KEYS(String(k)))data[k]=await get(k);
+  await sb.from('prefs').upsert({data,updated_at:new Date().toISOString()});}
+function cloudPut(k,v){if(!sbUser||syncing)return;
+  if(isStrip(v))upStrip(v).catch(e=>console.warn('sync',e));
+  else if(PREF_KEYS(k)){clearTimeout(prefT);prefT=setTimeout(()=>pushPrefs().catch(()=>{}),800);}}
+function cloudDel(k){if(!sbUser||syncing||!/^[sf]\d/.test(k))return;const u=sbUser.id;
+  sb.from('strips').upsert({id:k,meta:{},deleted:true,updated_at:new Date().toISOString()}).then(()=>{});
+  sb.storage.from('strips').remove([u+'/'+k+'.png',u+'/'+k+'-back.png']).then(()=>{});remoteImgs.delete(k);}
+async function fullSync(){if(!sbUser||syncing)return;syncing=true;drawCloud('Syncing…');
+  try{const u=sbUser.id;
+    const {data:rows,error}=await sb.from('strips').select('id,meta,deleted');if(error)throw error;
+    const {data:pr}=await sb.from('prefs').select('data').maybeSingle();const rp=(pr&&pr.data)||{};
+    let list=(await get('list'))||[];const have=new Set(list.map(x=>x.id));const rmap={};rows.forEach(r=>rmap[r.id]=r);
+    remoteImgs=new Set(rows.filter(r=>!r.deleted).map(r=>r.id));
+    for(const r of rows){
+      if(r.deleted){if(have.has(r.id)){await _del(r.id);list=list.filter(x=>x.id!==r.id);}continue;}
+      if(have.has(r.id))continue;
+      const a=await sb.storage.from('strips').download(u+'/'+r.id+'.png');if(a.error)continue;
+      const it=Object.assign({},r.meta);delete it.hasBack;it.img=await blobURL(a.data);
+      if(r.meta.hasBack){const b=await sb.storage.from('strips').download(u+'/'+r.id+'-back.png');if(!b.error)it.backImg=await blobURL(b.data);}
+      await _put(r.id,it);list.push({id:r.id,date:it.date});}
+    list.sort((a,b)=>b.date-a.date);await _put('list',list);
+    for(const k in rp)if(k!=='list'&&(await get(k))===undefined)await _put(k,rp[k]);
+    syncing=false;
+    for(const x of list)if(!rmap[x.id]){const v=await get(x.id);if(isStrip(v))await upStrip(v);}
+    await pushPrefs();
+    {const n=await get('boothName');if(n&&n!==BOOTH){BOOTH=n;booth.setName(n);updPlace();}}
+    if($('#archive').classList.contains('on'))openArchive();
+  }catch(e){console.warn('sync',e);toast('Could not sync right now');}
+  syncing=false;drawCloud();}
+function drawCloud(t){document.querySelectorAll('.cloudBtn').forEach(b=>{b.textContent=t||(sbUser?'☁ Synced':'☁ Keep it safe');b.classList.toggle('in',!!sbUser);});}
+function askText(label,ph,type){return new Promise(res=>{const o=document.createElement('div');o.className='nameSheet';
+  o.innerHTML=`<form><label>${label}</label><input autocomplete="off" spellcheck="false"><div><button type="button" class="btn ghost">Cancel</button><button type="submit" class="btn">OK</button></div></form>`;
+  document.body.appendChild(o);const i=o.querySelector('input');i.type=type||'text';i.placeholder=ph||'';if(type==='email')i.autocomplete='email';if(type==='code'){i.type='text';i.inputMode='numeric';i.autocomplete='one-time-code';}
+  setTimeout(()=>{o.classList.add('on');i.focus();},20);
+  const done=v=>{o.classList.remove('on');setTimeout(()=>o.remove(),300);res(v);};
+  o.querySelector('.ghost').onclick=()=>done(null);o.querySelector('form').onsubmit=e=>{e.preventDefault();done(i.value.trim());};});}
+async function cloudTap(){if(!sb){toast('Cloud is not reachable');return;}
+  if(sbUser){const ok=await confirmSheet('Synced as '+sbUser.email+'. Your strips are kept across devices.','Sign out','clear',true);if(ok){await sb.auth.signOut();}return;}
+  const em=await askText('Keep your archive safe. We email you a sign in code, no password.','you@mail.com','email');if(!em)return;
+  const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
+  if(error){toast(error.message||'Could not send');return;}
+  const code=await askText('Check your mail. Type the code here, or tap the link in the mail.','123456','code');if(!code)return;
+  const r=await sb.auth.verifyOtp({email:em,token:code,type:'email'});if(r.error)toast('That code did not work');}
+function initCloud(){if(!window.supabase){drawCloud();return;}
+  sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'implicit'}});
+  sb.auth.onAuthStateChange((ev,ses)=>{const was=sbUser&&sbUser.id;sbUser=ses?ses.user:null;drawCloud();
+    if(sbUser&&was!==sbUser.id){if(ev==='SIGNED_IN')toast('Signed in. Your archive is safe.');setTimeout(fullSync,300);}});}
 
 /* ---------------- sound (all made in the browser) ---------------- */
 let ac=null,hum=null,humF=null,motor=null;
@@ -888,6 +959,8 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 
 (async()=>{const p=await get('pending');if(p)startWaiting();})();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pending)tickWait();});
+initCloud();
+window.__pb={get sb(){return sb},get user(){return sbUser}};
 })();
 </script>
 </body>

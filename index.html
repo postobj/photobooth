@@ -320,6 +320,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 .navArrow{position:absolute;top:45%;z-index:6;width:48px;height:48px;border-radius:50%;border:1px solid #1c1c1b;background:none;font-size:22px;line-height:1;color:#1c1c1b;cursor:pointer;display:none}
 @media (pointer:fine){.navArrow{display:block}}
 .tabs .link.off:not([disabled]){color:#3a3833!important;opacity:1!important}
+.zoomView{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;padding:calc(56px + env(safe-area-inset-top)) 0 40px}
+.zoomView.on{opacity:1}
+.zoomView img{width:min(86vw,460px);height:auto;display:block}
+.zoomView .closeX{position:fixed;top:calc(16px + env(safe-area-inset-top));right:18px;z-index:2;background:var(--bg);padding:6px 10px;border-radius:999px}
+.viewcol .card{width:min(40vw,calc((100dvh - 290px)*.233),210px)!important}
+.scene:not(.on),.scene:not(.on) *{pointer-events:none!important}
+#card img{-webkit-user-drag:none;user-select:none;-webkit-user-select:none}
 </style>
 </head>
 <body>
@@ -383,7 +390,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="top"><span class="lbl" id="viewPlace">Photobooth</span><button class="link closeX" id="viewClose" aria-label="Close">✕ Close</button></div>
     <div class="viewcol">
       <div class="stage3d"><div class="card" id="card">
-        <div class="face front"><img id="viewImg" alt="Photo strip, four black and white photos"></div>
+        <div class="face front"><img id="viewImg" alt="Photo strip, four black and white photos" draggable="false"></div>
         <div class="face back"><div class="stamp" id="stamp"></div><textarea id="note" placeholder="tap to write on the back…" maxlength="180" readonly></textarea><div class="flipback">↺ turn back</div></div>
       </div></div>
       <button class="link stripTitle" id="stripTitle" aria-label="Rename this strip"></button><div class="meta" id="viewMeta"><span id="viewDate"></span> · <button class="link inline" id="toArchive">kept in your archive →</button></div>
@@ -649,18 +656,24 @@ migrateStrips().catch(()=>{});
 (async()=>{const n=await get('boothName');if(n){BOOTH=n;booth.setName(n);updPlace();}})();
 $('#flipBtn2')&&0;
 (function(){try{const b=document.querySelector('.face.back');if(b)b.style.backgroundImage=`url(${perfPaper(SW,SH).toDataURL('image/png')})`;}catch(e){}})();
-async function navStrip(d){if(!cur)return;const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===cur.id);const n=l[i+d];if(!n)return;
-  const c=$('#card');c.style.transition='transform .25s,opacity .25s';c.style.opacity='0';c.style.transform=`translateX(${-d*60}px) rotate(-2.5deg)`;
-  await wait(220);await openStrip(n.id);c.style.transition='none';c.style.transform=`translateX(${d*60}px) rotate(-2.5deg)`;void c.offsetWidth;c.style.transition='transform .3s,opacity .3s';c.style.opacity='1';c.style.transform='';setTimeout(()=>c.style.transition='',320);sfx.swish();}
-(function(){let lock=0;const go=d=>{const n=Date.now();if(n<lock||!$('#view').classList.contains('on'))return;lock=n+500;navStrip(d);};
-  $('#view').addEventListener('wheel',e=>{if(Math.abs(e.deltaX)>Math.abs(e.deltaY)&&Math.abs(e.deltaX)>25){e.preventDefault();go(e.deltaX>0?1:-1);}},{passive:false});
-  addEventListener('keydown',e=>{if(document.activeElement&&/TEXTAREA|INPUT/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1);});
-  const mk=(d,t)=>{const b=document.createElement('button');b.className='navArrow';b.textContent=t;b.setAttribute('aria-label',d>0?'Next strip':'Previous strip');b.style[d>0?'right':'left']='4vw';b.onclick=()=>go(d);$('#view').appendChild(b);};})();
+async function navStrip(d,from){if(!cur)return false;const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===cur.id);const n=l[i+d];if(!n)return false;
+  const c=$('#card'),W=Math.min(innerWidth,700);c.style.transition='transform .28s ease-in,opacity .28s';c.style.opacity='0';c.style.transform=`translateX(${-d*W*.7}px) rotate(${-2.5-d*6}deg)`;
+  await wait(260);await openStrip(n.id);c.style.transition='none';c.style.transform=`translateX(${d*W*.7}px) rotate(${-2.5+d*6}deg)`;void c.offsetWidth;
+  c.style.transition='transform .45s cubic-bezier(.2,.8,.2,1),opacity .35s';c.style.opacity='1';c.style.transform='';setTimeout(()=>c.style.transition='',480);sfx.swish();return true;}
 function flipCard(){const c=$('#card');c.classList.toggle('flip');sfx.swish();if(!c.classList.contains('flip'))$('#note').blur();}
-$('#card').addEventListener('click',e=>{if(e.target.tagName!=='TEXTAREA')flipCard();});
+$('#card').addEventListener('click',e=>{if(e.target.tagName==='TEXTAREA')return;if($('#card').classList.contains('flip'))flipCard();else openZoom();});
+function openZoom(){if(!cur)return;const o=document.createElement('div');o.className='zoomView';o.innerHTML=`<button class="link closeX">✕ Close</button><img src="${cur.img}" alt="Your strip, large">`;document.body.appendChild(o);
+  setTimeout(()=>o.classList.add('on'),20);const close=()=>{o.classList.remove('on');setTimeout(()=>o.remove(),300);};o.querySelector('.closeX').onclick=close;o.querySelector('img').onclick=close;}
 $('#flipBtn2').addEventListener('click',()=>{flipCard();});
-(function(){let sx=null;const c=$('#card');c.addEventListener('pointerdown',e=>{if(e.target.tagName!=='TEXTAREA')sx=e.clientX;});
-  c.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40){e.stopPropagation();navStrip(e.clientX<sx?1:-1);sx=null;c.dataset.sw='1';setTimeout(()=>delete c.dataset.sw,50);}sx=null;});
+(function(){let sx=null,dx=0;const c=$('#card'),base=()=>c.classList.contains('flip')?' rotateY(180deg)':'';
+  c.style.touchAction='pan-y';c.addEventListener('dragstart',e=>e.preventDefault());
+  c.addEventListener('pointerdown',e=>{if(e.target.tagName==='TEXTAREA')return;sx=e.clientX;dx=0;try{c.setPointerCapture(e.pointerId);}catch(_){}});
+  c.addEventListener('pointermove',e=>{if(sx==null)return;dx=e.clientX-sx;if(Math.abs(dx)>6){c.style.transition='none';c.style.transform=`translateX(${dx}px) rotate(${-2.5+dx/40}deg)${base()}`;c.style.opacity=String(Math.max(.35,1-Math.abs(dx)/400));}});
+  const up=async e=>{if(sx==null)return;sx=null;
+    if(Math.abs(dx)>60){c.dataset.sw='1';setTimeout(()=>delete c.dataset.sw,60);const ok=await navStrip(dx<0?1:-1,dx);if(ok)return;}
+    if(Math.abs(dx)>6){c.dataset.sw='1';setTimeout(()=>delete c.dataset.sw,60);}
+    c.style.transition='transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s';c.style.transform='';c.style.opacity='';setTimeout(()=>c.style.transition='',380);dx=0;};
+  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
   c.addEventListener('click',e=>{if(c.dataset.sw)e.stopImmediatePropagation();},true);})();
 $('#note').addEventListener('click',e=>{e.stopPropagation();openWrite();});
 function openWrite(){if(!cur)return;const o=document.createElement('div');o.className='writeSheet';

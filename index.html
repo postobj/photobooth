@@ -522,11 +522,11 @@ function askText(label,ph,type){return new Promise(res=>{const o=document.create
   o.querySelector('.ghost').onclick=()=>done(null);o.querySelector('form').onsubmit=e=>{e.preventDefault();done(i.value.trim());};});}
 async function cloudTap(){if(!sb){toast('Cloud is not reachable');return;}
   if(sbUser){const ok=await confirmSheet('Synced as '+sbUser.email+'. Your strips are kept across devices.','Sign out','clear',true);if(ok){await sb.auth.signOut();}return;}
-  let em=await askText('Keep your archive safe. We email you a sign in link, no password.','you@mail.com','email');if(!em)return;em=em.replace(/\s+/g,'').toLowerCase();
+  let em=await askText('Keep your archive safe. We email you a code, no password.','you@mail.com','email');if(!em)return;em=em.replace(/\s+/g,'').toLowerCase();
   const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
   if(error){const m=String(error.message||'');toast(/rate|limit|seconds/i.test(m)?'Too many mails, try again in a bit':'Could not send: '+m);return;}
-  const o=document.createElement('div');o.className='nameSheet';o.innerHTML=`<form><label>Check your mail (${em.replace(/</g,'')}) and tap the link. Open it in this same browser if you can.</label><div><button type="submit" class="btn">OK</button></div></form>`;
-  document.body.appendChild(o);setTimeout(()=>o.classList.add('on'),20);o.querySelector('form').onsubmit=e=>{e.preventDefault();o.classList.remove('on');setTimeout(()=>o.remove(),300);};}
+  const code=await askText('We sent a code to '+em.replace(/</g,'')+'. Type it here, or tap the link in the mail.','123456','code');if(!code)return;
+  const r=await sb.auth.verifyOtp({email:em,token:code.replace(/\D/g,''),type:'email'});if(r.error)toast('That code did not work');}
 function initCloud(){if(!window.supabase){drawCloud();return;}
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'implicit'}});
   sb.auth.onAuthStateChange((ev,ses)=>{const was=sbUser&&sbUser.id;sbUser=ses?ses.user:null;drawCloud();

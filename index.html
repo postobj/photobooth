@@ -329,6 +329,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 #card img{-webkit-user-drag:none;user-select:none;-webkit-user-select:none}
 .stickBtn{width:22px;height:18px;padding:0;border:0;background:none;opacity:.7;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .stickBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.stickFab{position:absolute;left:16px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:6;width:62px;height:62px;border-radius:46% 54% 50% 50%/52% 48% 52% 48%;background:#fff;border:1.5px dashed #1c1c1b;box-shadow:0 0 0 5px #fff,0 6px 14px rgba(0,0,0,.12);transform:rotate(-8deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;font-family:"DM Mono",monospace;color:#1c1c1b;transition:transform .25s}
+.stickFab:active{transform:rotate(-8deg) scale(.94)}
+.stickFab .plus{font-size:24px;line-height:1;font-weight:300}
+.stickFab .lab{font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:1px}
+#out.waiting .stickFab{opacity:.0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -338,10 +343,11 @@ button{font:inherit;color:inherit;cursor:pointer}
   <section class="scene on" id="out">
     <div id="stage3d"></div>
     <div class="bar"><span class="placeLbl">Photobooth</span><span>4 poses · B&amp;W</span><span id="clock"></span></div>
+    <button class="stickFab" id="stickBtn" aria-label="Stick your own photo on the booth"><span class="plus">+</span><span class="lab">sticker</span></button>
     <div class="hint" id="outHint">( Pull the curtain open → )</div>
     <div id="timer"><div class="t" id="timeT">2:00</div><div class="bar2"><i id="timeBar"></i></div><div class="sub">Developing · go wander</div></div>
     <button id="skip">skip (prototype)</button>
-    <div class="bottom"><div class="tabs"><button class="link on" data-go="out">Booth</button><button class="link off" data-go="archive">Archive</button><button class="link off" disabled style="opacity:.45">Map · soon</button><button class="link stickBtn" id="stickBtn" aria-label="Stick your own photo on the booth" title="Add a sticker"><svg viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3"/><path d="M8 7v5M5.5 9.5h5"/></svg></button><button class="link muteBtn" aria-label="Sound on or off" title="Sound"></button></div></div>
+    <div class="bottom"><div class="tabs"><button class="link on" data-go="out">Booth</button><button class="link off" data-go="archive">Archive</button><button class="link off" disabled style="opacity:.45">Map · soon</button><button class="link muteBtn" aria-label="Sound on or off" title="Sound"></button></div></div>
     <div id="sheet">
       <button class="x" id="sheetClose" aria-label="Close">✕</button>
       <div id="sheetInfo">
@@ -570,7 +576,7 @@ $('#lamp').addEventListener('click',async()=>{
 let pending=null,waitTimer=null;
 async function startWaiting(){
   pending=await get('pending');if(!pending){show('out');return;}
-  waiting=true;stripReady=false;show('out');booth.setDance(true);window.__resetIn&&window.__resetIn();booth.setOpen(.45);booth.hideStrip();booth.setStrip(pending.img);setTimeout(()=>booth.zoomTo('slot'),400);
+  waiting=true;stripReady=false;show('out');$('#out').classList.add('waiting');booth.setDance(true);window.__resetIn&&window.__resetIn();booth.setOpen(.45);booth.hideStrip();booth.setStrip(pending.img);setTimeout(()=>booth.zoomTo('slot'),400);
   $('#outHint').style.opacity='0';$('#timer').classList.add('on');if(/[?&]dev\b/.test(location.search))$('#skip').style.display='block';
   stopHum();clearInterval(waitTimer);waitTimer=setInterval(tickWait,250);tickWait();
 }
@@ -605,7 +611,7 @@ async function takeStrip(){
   if(!pending||!stripReady)return;sfx.swish();stripReady=false;tabStatus(null);
   const id='s'+pending.date,item={id,img:pending.img,date:pending.date,place:PLACE,note:''};
   const list=(await get('list'))||[];list.unshift({id,date:item.date});await put('list',list);await put(id,item);
-  await del('pending');pending=null;waiting=false;booth.setDance(false);stopMotor();booth.hideStrip();booth.zoomOut();booth.lock(false);
+  await del('pending');pending=null;waiting=false;$('#out').classList.remove('waiting');booth.setDance(false);stopMotor();booth.hideStrip();booth.zoomOut();booth.lock(false);
   $('#outHint').classList.remove('near');$('#outHint').textContent='( Pull the curtain open → )';
   openStrip(id);
 }
@@ -645,11 +651,13 @@ $('#delBtn').addEventListener('click',async()=>{if(!cur)return;if(!await confirm
   const id=cur.id,m=mKey(cur.date);const l=((await get('list'))||[]).filter(x=>x.id!==id);await put('list',l);await del(id);
   const ord=await get('order:'+m);if(ord)await put('order:'+m,ord.filter(x=>x!==id));cur=null;window.__lastStrip=null;sfx.swish();toast('Thrown away');openArchive(m,true);});
 /* your own photos as stickers on the booth: from the gallery or straight from the camera */
-function makeSticker(im){const S=440,b=16,w=im.width,h=im.height,ar=Math.min(1.6,Math.max(.62,w/h));
-  const cw=ar>=1?S:Math.round(S*ar),ch=ar>=1?Math.round(S/ar):S,c=document.createElement('canvas');c.width=cw+2*b;c.height=ch+2*b;const x=c.getContext('2d');
-  const rr=(X,Y,W,H,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath();};
-  x.fillStyle='#fbfaf7';rr(0,0,c.width,c.height,26);x.fill();x.save();rr(b,b,cw,ch,16);x.clip();
-  const sc=Math.max(cw/w,ch/h);x.drawImage(im,(cw-w*sc)/2+b,(ch-h*sc)/2+b,w*sc,h*sc);x.restore();return {url:c.toDataURL('image/png'),ar:c.width/c.height};}
+function makeSticker(im){const S=440,b=22,w=im.width,h=im.height,ar=Math.min(1.5,Math.max(.67,w/h));
+  const cw=ar>=1?S:Math.round(S*ar),ch=ar>=1?Math.round(S/ar):S,W=cw+2*b,H=ch+2*b,c=document.createElement('canvas');c.width=W+8;c.height=H+8;const x=c.getContext('2d');
+  const seed=Math.random()*10,blob=(pad)=>{x.beginPath();const cx=c.width/2,cy=c.height/2,rx=W/2-pad,ry=H/2-pad;for(let k=0;k<=120;k++){const t=k/120*Math.PI*2,n=1+.035*Math.sin(t*3+seed)+.025*Math.sin(t*5+seed*2),
+    ct=Math.cos(t),st=Math.sin(t),px=cx+rx*n*Math.sign(ct)*Math.pow(Math.abs(ct),.6),py=cy+ry*n*Math.sign(st)*Math.pow(Math.abs(st),.6);k?x.lineTo(px,py):x.moveTo(px,py);}x.closePath();};
+  blob(0);x.fillStyle='#ffffff';x.fill();x.lineWidth=2;x.strokeStyle='rgba(0,0,0,.18)';x.stroke();
+  x.save();blob(b);x.clip();const sc=Math.max(cw/w,ch/h);x.drawImage(im,(c.width-w*sc)/2,(c.height-h*sc)/2,w*sc,h*sc);x.restore();
+  return {url:c.toDataURL('image/png'),ar:c.width/c.height};}
 async function loadMyStickers(){const l=(await get('myStickers'))||[];l.forEach((st,i)=>booth.addSticker(st.url,i,st.ar));}
 loadMyStickers();
 $('#stickBtn').addEventListener('click',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;

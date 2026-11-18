@@ -625,10 +625,10 @@ function tickWait(){
   if(motor&&ac)motor.g.gain.value=.015+.015*(1-left/WAIT_MS);
   if(left<=0){clearInterval(waitTimer);deliver();}
 }
-async function deliver(){
+async function deliver(){if(!$('#out').classList.contains('on')){document.querySelectorAll('.nameSheet,.writeSheet,.zoomView').forEach(e=>e.remove());show('out');}if(!$('#out').classList.contains('zoomed'))waitZoom(true);
   stopMotor();sfx.clunk();$('#timer').classList.remove('on');$('#skip').style.display='none';
   await wait(300);booth.dropStrip();await wait(2400);sfx.drip();stripReady=true;booth.setDance(false);
-  waitZoom($('#out').classList.contains('zoomed'));
+  waitZoom(true);
 }
 $('#skip').addEventListener('click',()=>{if(pending){pending.start=Date.now()-WAIT_MS+1200;put('pending',pending);}});
 async function takeStrip(){

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#e8e6e1">
 <title>Photobooth</title>
+<link rel="manifest" href="manifest.json">
 <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e8e6e1'/%3E%3Crect x='11' y='4' width='10' height='24' fill='%23f6f3ec' stroke='%23222' stroke-width='1.2'/%3E%3Crect x='13' y='6.5' width='6' height='4.5' fill='%23333'/%3E%3Crect x='13' y='12' width='6' height='4.5' fill='%23555'/%3E%3Crect x='13' y='17.5' width='6' height='4.5' fill='%23333'/%3E%3Crect x='13' y='23' width='6' height='3' fill='%23555'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Archivo:wght@500;800&family=Homemade+Apple&display=swap" rel="stylesheet">
@@ -574,7 +575,11 @@ function buildStrip(frames,noTint){
   return c.toDataURL('image/png');
 }
 
-$('#lamp').addEventListener('click',async()=>{
+let swReg=null;try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').then(r=>swReg=r).catch(()=>{});}catch(e){}
+function askNotify(){try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}}
+async function notifyReady(){try{if(!('Notification' in window)||Notification.permission!=='granted'||!document.hidden)return;const o={body:'Your strip is ready. Come and take it.',tag:'strip',icon:document.getElementById('favicon').href};
+  if(swReg)await swReg.showNotification(BOOTH,o);else new Notification(BOOTH,o);}catch(e){}}
+$('#lamp').addEventListener('click',async()=>{askNotify();
   const lamp=$('#lamp');if(lamp.disabled)return;audio();lamp.disabled=true;
   $('#booth').classList.add('lit');sfx.clunk();$('#boothHint').textContent='Look into the glass';
   await wait(1300);const frames=[];const dots=[...document.querySelectorAll('#dots i')];
@@ -625,7 +630,7 @@ function tickWait(){
   if(motor&&ac)motor.g.gain.value=.015+.015*(1-left/WAIT_MS);
   if(left<=0){clearInterval(waitTimer);deliver();}
 }
-async function deliver(){if(!$('#out').classList.contains('on')){document.querySelectorAll('.nameSheet,.writeSheet,.zoomView').forEach(e=>e.remove());show('out');}if(!$('#out').classList.contains('zoomed'))waitZoom(true);
+async function deliver(){notifyReady();if(!$('#out').classList.contains('on')){document.querySelectorAll('.nameSheet,.writeSheet,.zoomView').forEach(e=>e.remove());show('out');}if(!$('#out').classList.contains('zoomed'))waitZoom(true);
   stopMotor();sfx.clunk();$('#timer').classList.remove('on');$('#skip').style.display='none';
   await wait(300);booth.dropStrip();await wait(2400);sfx.drip();stripReady=true;booth.setDance(false);
   waitZoom(true);

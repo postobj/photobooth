@@ -516,15 +516,15 @@ async function fullSync(){if(!sbUser||syncing)return;syncing=true;drawCloud('Syn
 function drawCloud(t){document.querySelectorAll('.cloudBtn').forEach(b=>{const ic='<svg viewBox="0 0 20 14" width="16" height="11" style="vertical-align:-1px;margin-right:6px" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M5.5 12.5h9a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 5.3 4.6 4 4 0 0 0 5.5 12.5z"/></svg>';b.innerHTML=ic+(t||(sbUser?'Synced':'Keep it safe'));b.classList.toggle('in',!!sbUser);});}
 function askText(label,ph,type){return new Promise(res=>{const o=document.createElement('div');o.className='nameSheet';
   o.innerHTML=`<form><label>${label}</label><input autocomplete="off" spellcheck="false"><div><button type="button" class="btn ghost">Cancel</button><button type="submit" class="btn">OK</button></div></form>`;
-  document.body.appendChild(o);const i=o.querySelector('input');i.type=type||'text';i.placeholder=ph||'';if(type==='email')i.autocomplete='email';if(type==='code'){i.type='text';i.inputMode='numeric';i.autocomplete='one-time-code';}
+  document.body.appendChild(o);const i=o.querySelector('input');i.type=type||'text';i.placeholder=ph||'';if(type==='email'){i.type='text';i.inputMode='email';i.autocomplete='email';i.autocapitalize='off';o.querySelector('form').noValidate=true;}if(type==='code'){i.type='text';i.inputMode='numeric';i.autocomplete='one-time-code';}
   setTimeout(()=>{o.classList.add('on');i.focus();},20);
   const done=v=>{o.classList.remove('on');setTimeout(()=>o.remove(),300);res(v);};
   o.querySelector('.ghost').onclick=()=>done(null);o.querySelector('form').onsubmit=e=>{e.preventDefault();done(i.value.trim());};});}
 async function cloudTap(){if(!sb){toast('Cloud is not reachable');return;}
   if(sbUser){const ok=await confirmSheet('Synced as '+sbUser.email+'. Your strips are kept across devices.','Sign out','clear',true);if(ok){await sb.auth.signOut();}return;}
-  const em=await askText('Keep your archive safe. We email you a sign in link, no password.','you@mail.com','email');if(!em)return;
+  let em=await askText('Keep your archive safe. We email you a sign in link, no password.','you@mail.com','email');if(!em)return;em=em.replace(/\s+/g,'').toLowerCase();
   const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
-  if(error){toast(error.message||'Could not send');return;}
+  if(error){const m=String(error.message||'');toast(/rate|limit|seconds/i.test(m)?'Too many mails, try again in a bit':(/invalid/i.test(m)?'That email looks wrong':'Could not send: '+m));return;}
   const o=document.createElement('div');o.className='nameSheet';o.innerHTML=`<form><label>Check your mail (${em.replace(/</g,'')}) and tap the link. Open it in this same browser if you can.</label><div><button type="submit" class="btn">OK</button></div></form>`;
   document.body.appendChild(o);setTimeout(()=>o.classList.add('on'),20);o.querySelector('form').onsubmit=e=>{e.preventDefault();o.classList.remove('on');setTimeout(()=>o.remove(),300);};}
 function initCloud(){if(!window.supabase){drawCloud();return;}

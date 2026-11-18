@@ -394,7 +394,7 @@ button{font:inherit;color:inherit;cursor:pointer}
         <div class="face back"><div class="stamp" id="stamp"></div><textarea id="note" placeholder="tap to write on the back…" maxlength="180" readonly></textarea><div class="flipback">↺ turn back</div></div>
       </div></div>
       <button class="link stripTitle" id="stripTitle" aria-label="Rename this strip"></button><div class="meta" id="viewMeta"><span id="viewDate"></span> · <button class="link inline" id="toArchive">kept in your archive →</button></div>
-      <div class="actions"><button class="btn" id="flipBtn2">↺ Flip</button><button class="btn icon" id="sendBtn" aria-label="Send to a friend" title="Send"><svg viewBox="0 0 20 20"><path d="M3 10l14-7-5 14-2.5-5.5z"/><path d="M9.5 11.5L17 3"/></svg></button><button class="btn icon" id="saveBtn" aria-label="Save" title="Save"><svg viewBox="0 0 20 20"><path d="M10 3v10M5.5 8.5L10 13l4.5-4.5"/><path d="M4 16h12"/></svg></button></div>
+      <div class="actions"><button class="btn" id="flipBtn2">↺ Flip</button><button class="btn icon" id="sendBtn" aria-label="Send to a friend" title="Send"><svg viewBox="0 0 20 20"><path d="M3 10l14-7-5 14-2.5-5.5z"/><path d="M9.5 11.5L17 3"/></svg></button><button class="btn icon" id="delBtn" aria-label="Throw this strip away" title="Throw away"><svg viewBox="0 0 20 20"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg></button><button class="btn icon" id="saveBtn" aria-label="Save" title="Save"><svg viewBox="0 0 20 20"><path d="M10 3v10M5.5 8.5L10 13l4.5-4.5"/><path d="M4 16h12"/></svg></button></div>
     </div>
     <div class="bottom"><div class="tabs"><button class="link off" data-go="out">Booth</button><button class="link off" data-go="archive">Archive</button><button class="link off" disabled style="opacity:.45">Map · soon</button><button class="link muteBtn" aria-label="Sound on or off" title="Sound"></button></div></div>
   </section>
@@ -635,6 +635,13 @@ function addFriendStrip(){const i=document.createElement('input');i.type='file';
     const list=(await get('list'))||[];list.unshift({id,date:item.date});await put('list',list);await put(id,item);
     window.__lastStrip=id;sfx.swish();toast('Added to your archive');openArchive(mKey(item.date),true);
   }catch(e){toast('Could not read that image');}};i.click();}
+function confirmSheet(msg,yes){return new Promise(res=>{const o=document.createElement('div');o.className='nameSheet';
+  o.innerHTML=`<form><label>${msg}</label><div><button type="button" class="btn ghost">Keep it</button><button type="submit" class="btn">${yes}</button></div></form>`;
+  document.body.appendChild(o);setTimeout(()=>o.classList.add('on'),20);const done=v=>{o.classList.remove('on');setTimeout(()=>o.remove(),300);res(v);};
+  o.querySelector('.ghost').onclick=()=>done(false);o.addEventListener('click',e=>{if(e.target===o)done(false);});o.querySelector('form').onsubmit=e=>{e.preventDefault();done(true);};});}
+$('#delBtn').addEventListener('click',async()=>{if(!cur)return;if(!await confirmSheet('Throw this strip away? It cannot be brought back.','Throw away'))return;
+  const id=cur.id,m=mKey(cur.date);const l=((await get('list'))||[]).filter(x=>x.id!==id);await put('list',l);await del(id);
+  const ord=await get('order:'+m);if(ord)await put('order:'+m,ord.filter(x=>x!==id));cur=null;window.__lastStrip=null;sfx.swish();toast('Thrown away');openArchive(m,true);});
 async function stripNo(id){const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===id);return i<0?0:l.length-i;}
 function stripName(x){return x.title||('N° '+(x.no||''));}
 $('#stripTitle').addEventListener('click',async()=>{if(!cur)return;const v=await askName('Name this strip',cur.title||'',stripName(cur));if(v===null)return;cur.title=v.trim();await put(cur.id,cur);$('#stripTitle').textContent=stripName(cur)+'  ✎';});

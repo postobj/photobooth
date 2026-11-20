@@ -312,7 +312,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .btn.icon{width:44px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .btn.icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .back{padding:26px 22px 22px!important;gap:6px!important;overflow:hidden}
-.back .stamp{font-size:9px!important;letter-spacing:.08em!important;line-height:1.6!important;overflow-wrap:anywhere;padding-bottom:5px!important}
+.back .stamp{font-size:7.5px!important;letter-spacing:.06em!important;line-height:1.6!important;overflow-wrap:normal;word-break:normal;padding-bottom:5px!important}
 .back textarea{height:auto!important;flex:1 1 auto!important;min-height:0;font-size:13px!important;line-height:1.55!important}
 .back .flipback{flex:none!important;font-size:9px!important;padding:5px 0 0!important}
 #inCurtain{right:auto!important;left:.25em;transform-origin:top left}
@@ -733,7 +733,7 @@ async function openStrip(id){
   $('#viewImg').src=cur.img;$('#card').classList.remove('flip');
   const d=new Date(cur.date),ds=d.toLocaleDateString('de-DE')+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
   $('#stamp').innerHTML=(cur.place||'').replace(/</g,'&lt;').split(' · ').join('<br>')+'<br>'+ds.split(' · ').join('<br>');$('#viewPlace').textContent=cur.place;$('#viewDate').textContent=ds;
-  $('#note').value=cur.note||'';const bk=document.querySelector('.face.back');bk.classList.toggle('hasImg',!!cur.backImg);bk.style.setProperty('--bimg',cur.backImg?`url(${cur.backImg})`:'none');
+  $('#note').value=cur.note||'';requestAnimationFrame(fitNote);const bk=document.querySelector('.face.back');bk.classList.toggle('hasImg',!!cur.backImg);bk.style.setProperty('--bimg',cur.backImg?`url(${cur.backImg})`:'none');
   cur.no=await stripNo(cur.id);$('#stripTitle').textContent=stripName(cur)+'  ✎';show('view');
 }
 /* add a strip a friend sent: our own strip, our front+back image, or any photo */
@@ -829,7 +829,8 @@ function openWrite(){if(!cur)return;const o=document.createElement('div');o.clas
   setTimeout(()=>{o.classList.add('on');t.focus();},20);
   const close=save=>{if(save){const n=$('#note');n.value=t.value;n.dispatchEvent(new Event('input'));}o.classList.remove('on');setTimeout(()=>o.remove(),300);};
   const [c,ok]=o.querySelectorAll('.row button');c.onclick=()=>close(false);ok.onclick=()=>close(true);}
-let noteT;$('#note').addEventListener('input',e=>{if(!cur)return;cur.note=e.target.value;clearTimeout(noteT);noteT=setTimeout(()=>put(cur.id,cur),400);});
+function fitNote(){const t=$('#note');if(!t)return;let f=15;t.style.setProperty('font-size',f+'px','important');let g=0;while(t.scrollHeight>t.clientHeight+1&&f>7&&g++<20){f-=.5;t.style.setProperty('font-size',f+'px','important');}}
+let noteT;$('#note').addEventListener('input',e=>{if(!cur)return;cur.note=e.target.value;fitNote();clearTimeout(noteT);noteT=setTimeout(()=>put(cur.id,cur),400);});
 async function shareImage(){track('share'); // only the strip; with a note, front and back side by side
   const note=(($('#note')&&$('#note').value)||cur.note||'').trim();
   const im=await loadImg(cur.img);const W=im.width,H=im.height,gap=60;

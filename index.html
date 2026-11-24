@@ -787,6 +787,9 @@ async function peelSticker(key){booth.lock(true);booth.zoomAtSticker(key);await 
 loadMyStickers();
 $('#stickBtn').addEventListener('click',e=>{const b=e.currentTarget;if(!matchMedia('(hover:hover)').matches&&!b.classList.contains('open')){b.classList.add('open');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('open'),3500);return;}b.classList.remove('open');const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;
   try{const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f);});const st=makeSticker(await loadImg(url));
+    const ok=await new Promise(res=>{const o=document.createElement('div');o.className='nameSheet';o.innerHTML=`<form><label>Stick this on the booth?</label><div style="display:flex;justify-content:center;padding:14px 0 18px"><img src="${st.url}" style="max-width:160px;max-height:160px;transform:rotate(-4deg);filter:drop-shadow(0 6px 12px rgba(0,0,0,.18))"></div><div><button type="button" class="btn ghost">Not now</button><button type="submit" class="btn">Stick it</button></div></form>`;
+      document.body.appendChild(o);setTimeout(()=>o.classList.add('on'),20);const done=v=>{o.classList.remove('on');setTimeout(()=>o.remove(),300);res(v);};o.querySelector('.ghost').onclick=()=>done(false);o.querySelector('form').onsubmit=e=>{e.preventDefault();done(true);};});
+    if(!ok)return;
     const l=(await get('myStickers'))||[];st.id='u'+Date.now();l.push(st);await put('myStickers',l);booth.addSticker(st.url,l.length-1,st.ar,st.id);sfx.swish();toast('Stuck on your booth');}catch(e){toast('Could not read that image');}};i.click();});
 async function stripNo(id){const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===id);return i<0?0:l.length-i;}
 function stripName(x){return x.title||('N° '+(x.no||''));}

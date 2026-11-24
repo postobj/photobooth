@@ -332,6 +332,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .stickBtn{width:22px;height:18px;padding:0;border:0;background:none;opacity:.7;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .stickBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .stickFab{position:absolute;left:16px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:6;width:44px;height:44px;border-radius:46% 54% 50% 50%/52% 48% 52% 48%;background:#fff;border:1.5px dashed #1c1c1b;box-shadow:0 0 0 5px #fff,0 6px 14px rgba(0,0,0,.12);transform:rotate(-8deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;font-family:"DM Mono",monospace;color:#1c1c1b;transition:transform .25s}
+#out .bar,#out .stickFab,#out .bottom .tabs{transition:opacity .6s}#out.calm .bar,#out.calm .stickFab{opacity:.45}#out.calm .bottom .tabs{opacity:.6}#out.calm .bar:hover,#out.calm .stickFab:hover,#out.calm .bottom .tabs:hover{opacity:1}
 @media (min-aspect-ratio:1/1){.stickFab{scale:.72}}
 .stickFab:active{transform:rotate(-8deg) scale(.94)}
 .stickFab .plus{font-size:22px;line-height:1;font-weight:300}
@@ -443,7 +444,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </div>
 
 <script src="supabase.js?v=2.119"></script>
-<script src="booth3d.js?v=20261118c"></script>
+<script src="booth3d.js?v=20261124a"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -884,7 +885,10 @@ async function openArchive(month,open){if(month===undefined&&open===false)track(
       h+=`<button class="tab" data-m="${k}" style="left:${[104,14,196][i]}px;top:${bt-36}px;width:84px;background:${c}">${mLab(k)}</button><div class="bf" style="top:${bt}px;height:${430-bt}px;background:${c}"></div>`;});
     h+=`<div class="bf" style="top:0;height:430px;background:#d8d5cd"></div><div class="tab" style="left:196px;top:-36px;width:90px;height:42px;background:#d8d5cd;color:#1c1c1b;cursor:default;z-index:1">${archMonth?mLab(archMonth):'—'}</div>`;
     const pos=archMonth?((await get('pos2:'+archMonth))||{}):{};
-    h+=`<div class="inside">${cur.map((x,i)=>{const d=new Date(x.date);const no=all.length-all.indexOf(x);const nm=x.title||('N° '+no);const col=i%3,row=Math.floor(i/3);const p=pos[x.id]||{x:14+col*86,y:10+row*372+(col%2)*8,r:((i*53)%5-2)*.6,z:i};
+    const slotP=k=>{const col=k%3,row=Math.floor(k/3);return {x:14+col*86,y:10+row*372+(col%2)*8,r:((k*53)%5-2)*.6};};
+    const taken=new Set();let maxZ=0;cur.forEach(x=>{const q=pos[x.id];if(q){const c=Math.max(0,Math.min(2,Math.round((q.x-14)/86))),r=Math.max(0,Math.round((q.y-10)/372));taken.add(r*3+c);maxZ=Math.max(maxZ,q.z||0);}});
+    const auto={};let nk=0;cur.forEach(x=>{if(pos[x.id])return;while(taken.has(nk))nk++;auto[x.id]=Object.assign(slotP(nk),{z:++maxZ+50});taken.add(nk);});
+    h+=`<div class="inside">${cur.map((x,i)=>{const d=new Date(x.date);const no=all.length-all.indexOf(x);const nm=x.title||('N° '+no);const p=pos[x.id]||auto[x.id];
       return `<button data-iid="${x.id}" style="--d:${250+i*60}ms;left:${p.x}px;top:${p.y}px;z-index:${p.z};--rr:${p.r}deg"><img src="${x.img}" alt="Strip from ${d.toLocaleDateString('de-DE')}" draggable="false"><span>${nm.replace(/</g,'&lt;').toUpperCase()} · ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}</span></button>`;}).join('')}</div>`;
     const pk=[[48,-6,-5],[118,8,3],[188,18,-2],[82,-14,4],[156,-2,-4]];
     cur.slice(0,8).forEach((x,i)=>{const [l,t,r]=pk[i%5];const d=new Date(x.date);h+=`<button class="peek${i>4?' deep':''}" data-pid="${x.id}" aria-label="Strip from ${d.toLocaleDateString('de-DE')}" style="left:${l+(i>4?14:0)}px;top:${t+(i>4?16:0)}px;--r:${r}deg"><img src="${x.img}" alt=""></button>`;});
@@ -964,7 +968,8 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 (async()=>{const p=await get('pending');if(p)startWaiting();})();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pending)tickWait();});
 document.querySelectorAll('.cloudBtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();cloudTap();}));
-(function fabLoop(){const f=document.querySelector('.stickFab');if(f&&booth&&booth.project){if(innerWidth/innerHeight>=1){const p=booth.project(-.66,.17,.1);f.style.left=(p.x-22)+'px';f.style.top=(p.y-22)+'px';f.style.bottom='auto';}else{f.style.left=f.style.top=f.style.bottom='';}}requestAnimationFrame(fabLoop);})();
+let calmOn=null;
+(function fabLoop(){const o=$('#out');const calm=o.classList.contains('on')&&!o.classList.contains('waiting')&&!o.classList.contains('zoomed')&&!document.querySelector('.nameSheet,.writeSheet')&&!$('#sheet').classList.contains('on');if(calm!==calmOn){calmOn=calm;o.classList.toggle('calm',calm);try{booth.setDim(calm?.6:1);}catch(e){}}const f=document.querySelector('.stickFab');if(f&&booth&&booth.project){if(innerWidth/innerHeight>=1){const p=booth.project(-.66,.17,.1);f.style.left=(p.x-22)+'px';f.style.top=(p.y-22)+'px';f.style.bottom='auto';}else{f.style.left=f.style.top=f.style.bottom='';}}requestAnimationFrame(fabLoop);})();
 initCloud();
 window.__pb={get sb(){return sb},get user(){return sbUser}};
 })();

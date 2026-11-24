@@ -715,7 +715,7 @@ function drawWin(prog){if(!booth.drawWindow||!pending||!pending.img)return;if(wi
     const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(255,255,255,.18)');g.addColorStop(.4,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});}
 function tickWait(){
   if(!pending)return;if(/curtain/i.test($('#outHint').textContent))curtainHint();const left=Math.max(0,pending.start+WAIT_MS-Date.now()),s=Math.ceil(left/1000);
-  $('#timeT').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');tabStatus(left);$('#timeBar').style.width=(100*(1-left/WAIT_MS))+'%';drawWin(1-left/WAIT_MS);
+  $('#timeT').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');tabStatus(left);$('#timeBar').style.width=(100*(1-left/WAIT_MS))+'%';
   if(motor&&ac)motor.g.gain.value=.015+.015*(1-left/WAIT_MS);
   if(left<=0){clearInterval(waitTimer);deliver();}
 }

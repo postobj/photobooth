@@ -446,7 +446,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </div>
 
 <script src="supabase.js?v=2.119"></script>
-<script src="booth3d.js?v=20261124c"></script>
+<script src="booth3d.js?v=20261124d"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -474,7 +474,7 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}c
 /* ---------------- cloud (Supabase, optional sign in) ---------------- */
 const SB_URL='https://kdtfzwmlqybbhztwbzxo.supabase.co',SB_KEY='sb_publishable_MgbvY6DrPK-nj2X7WAzBeg_yrLFxbD4';
 let sb=null,sbUser=null,syncing=false,remoteImgs=new Set(),prefT=null;
-const PREF_KEYS=k=>k==='list'||k==='boothName'||k==='myStickers'||k==='hiddenStickers'||k.startsWith('pos2:')||k.startsWith('order:');
+const PREF_KEYS=k=>k==='list'||k==='boothName'||k==='myStickers'||k==='hiddenStickers'||k.startsWith('pos2:')||k.startsWith('ord:')||k.startsWith('order:');
 const isStrip=v=>v&&typeof v==='object'&&typeof v.img==='string'&&v.id;
 function stripMeta(v){const m={};for(const k in v)if(k!=='img'&&k!=='backImg')m[k]=v[k];m.hasBack=!!v.backImg;return m;}
 async function toBlob(u){return (await fetch(u)).blob();}
@@ -708,9 +708,14 @@ function drawIcon(p,ready){const c=document.createElement('canvas');c.width=c.he
   x.fillStyle='#ffffff';x.fillRect(25,14,14,36);x.strokeStyle='#222';x.lineWidth=1.5;x.strokeRect(25,14,14,36);
   x.fillStyle='#333';for(let i=0;i<4;i++)x.fillRect(27.5,16.5+i*8.3,9,6.5);
   document.getElementById('favicon').href=c.toDataURL('image/png');}
+let winImg=null,winSrc=null;
+function drawWin(prog){if(!booth.drawWindow||!pending||!pending.img)return;if(winSrc!==pending.img){winSrc=pending.img;winImg=new Image();winImg.src=pending.img;}if(!winImg.complete)return;
+  const i=Math.min(3,Math.floor(prog*4)),t=Math.min(1,(prog*4-i)/.7);booth.drawWindow((c,w,h)=>{c.fillStyle='#1f1e1c';c.fillRect(0,0,w,h);
+    c.globalAlpha=Math.max(0,t)*.95;c.filter='grayscale(1) contrast(1.1)';c.drawImage(winImg,SP+SM,SP+SM+i*(FH+SG),FW,FH,14,10,w-28,h-20);c.filter='none';c.globalAlpha=1;
+    const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(255,255,255,.18)');g.addColorStop(.4,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});}
 function tickWait(){
   if(!pending)return;if(/curtain/i.test($('#outHint').textContent))curtainHint();const left=Math.max(0,pending.start+WAIT_MS-Date.now()),s=Math.ceil(left/1000);
-  $('#timeT').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');tabStatus(left);$('#timeBar').style.width=(100*(1-left/WAIT_MS))+'%';
+  $('#timeT').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');tabStatus(left);$('#timeBar').style.width=(100*(1-left/WAIT_MS))+'%';drawWin(1-left/WAIT_MS);
   if(motor&&ac)motor.g.gain.value=.015+.015*(1-left/WAIT_MS);
   if(left<=0){clearInterval(waitTimer);deliver();}
 }
@@ -888,9 +893,9 @@ async function openArchive(month,open){if(month===undefined&&open===false)track(
     h+=`<div class="bf" style="top:0;height:430px;background:#d8d5cd"></div><div class="tab" style="left:196px;top:-36px;width:90px;height:42px;background:#d8d5cd;color:#1c1c1b;cursor:default;z-index:1">${archMonth?mLab(archMonth):'—'}</div>`;
     const pos=archMonth?((await get('pos2:'+archMonth))||{}):{};
     const slotP=k=>{const col=k%3,row=Math.floor(k/3);return {x:14+col*86,y:10+row*372+(col%2)*8,r:((k*53)%5-2)*.6};};
-    const taken=new Set();let maxZ=0;cur.forEach(x=>{const q=pos[x.id];if(q){const c=Math.max(0,Math.min(2,Math.round((q.x-14)/86))),r=Math.max(0,Math.round((q.y-10)/372));taken.add(r*3+c);maxZ=Math.max(maxZ,q.z||0);}});
-    const auto={};let nk=0;cur.forEach(x=>{if(pos[x.id])return;while(taken.has(nk))nk++;auto[x.id]=Object.assign(slotP(nk),{z:++maxZ+50});taken.add(nk);});
-    h+=`<div class="inside">${cur.map((x,i)=>{const d=new Date(x.date);const no=all.length-all.indexOf(x);const nm=x.title||('N° '+no);const p=pos[x.id]||auto[x.id];
+    const ordSaved=archMonth?((await get('ord:'+archMonth))||[]):[];const ids=cur.map(x=>x.id);
+    const ORD=[...ids.filter(i=>!ordSaved.includes(i)),...ordSaved.filter(i=>ids.includes(i))];
+    h+=`<div class="inside">${cur.map((x,i)=>{const d=new Date(x.date);const no=all.length-all.indexOf(x);const nm=x.title||('N° '+no);const k=ORD.indexOf(x.id);const p=Object.assign(slotP(k),{z:k+1});
       return `<button data-iid="${x.id}" style="--d:${250+i*60}ms;left:${p.x}px;top:${p.y}px;z-index:${p.z};--rr:${p.r}deg"><img src="${x.img}" alt="Strip from ${d.toLocaleDateString('de-DE')}" draggable="false"><span>${nm.replace(/</g,'&lt;').toUpperCase()} · ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}</span></button>`;}).join('')}</div>`;
     const pk=[[48,-6,-5],[118,8,3],[188,18,-2],[82,-14,4],[156,-2,-4]];
     cur.slice(0,8).forEach((x,i)=>{const [l,t,r]=pk[i%5];const d=new Date(x.date);h+=`<button class="peek${i>4?' deep':''}" data-pid="${x.id}" aria-label="Strip from ${d.toLocaleDateString('de-DE')}" style="left:${l+(i>4?14:0)}px;top:${t+(i>4?16:0)}px;--r:${r}deg"><img src="${x.img}" alt=""></button>`;});
@@ -930,7 +935,8 @@ async function openArchive(month,open){if(month===undefined&&open===false)track(
     A.querySelectorAll('.days button').forEach(b=>b.addEventListener('click',()=>lift(b.dataset.did)));
     // inside the open folder: tap to look; hold (or drag with a mouse) to move a strip anywhere; drop it outside to take it out
     const box=A.querySelector('.inside');let topZ=cur.length+1;
-    const savePos=async()=>{const p={};box.querySelectorAll('button').forEach(e=>{p[e.dataset.iid]={x:parseFloat(e.style.left),y:parseFloat(e.style.top),r:parseFloat(getComputedStyle(e).getPropertyValue('--rr'))||0,z:+e.style.zIndex||0};});await put('pos2:'+archMonth,p);};
+    const relayout=()=>{box.querySelectorAll('button').forEach(e=>{const k=ORD.indexOf(e.dataset.iid);const q=slotP(k);e.style.transition='left .35s ease,top .35s ease';e.style.left=q.x+'px';e.style.top=q.y+'px';e.style.zIndex=k+1;e.style.setProperty('--rr',q.r+'deg');setTimeout(()=>e.style.transition='',400);});};
+    const savePos=async(b)=>{if(b){const c=Math.max(0,Math.min(2,Math.round((parseFloat(b.style.left)-14)/86))),r=Math.max(0,Math.round((parseFloat(b.style.top)-10)/372));let t=Math.min(ORD.length-1,r*3+c);const id=b.dataset.iid;ORD.splice(ORD.indexOf(id),1);ORD.splice(t,0,id);}relayout();if(archMonth)await put('ord:'+archMonth,ORD.slice());};
     A.querySelectorAll('.inside button').forEach(b=>{let d=null;
       b.addEventListener('click',e=>e.preventDefault());
       b.addEventListener('pointerdown',e=>{if(!archOpen)return;d={x:e.clientX,y:e.clientY,l:parseFloat(b.style.left),t:parseFloat(b.style.top),moved:false,armed:e.pointerType==='mouse',id:e.pointerId};
@@ -942,7 +948,7 @@ async function openArchive(month,open){if(month===undefined&&open===false)track(
       const end=async e=>{if(!d)return;clearTimeout(d.tm);const was=d.moved,o=d;d=null;b.classList.remove('dragging','held');
         const fr=st.getBoundingClientRect();
         if(was&&(e.clientY<fr.top+10||e.clientY>fr.bottom-10||e.clientX<fr.left||e.clientX>fr.right)){b.style.left=o.l+'px';b.style.top=o.t+'px';b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),400);return;}
-        if(was){const bw=box.clientWidth,bh=box.clientHeight;b.style.left=Math.max(-10,Math.min(bw-40,parseFloat(b.style.left)))+'px';b.style.top=Math.max(-20,Math.min(box.scrollHeight-60,parseFloat(b.style.top)))+'px';await savePos();return;}
+        if(was){const bw=box.clientWidth,bh=box.clientHeight;b.style.left=Math.max(-10,Math.min(bw-40,parseFloat(b.style.left)))+'px';b.style.top=Math.max(-20,Math.min(box.scrollHeight-60,parseFloat(b.style.top)))+'px';await savePos(b);return;}
         if(e.type==='pointerup'&&archOpen){b.classList.add('out');sfx.swish();setTimeout(()=>openStrip(b.dataset.iid),480);}};
       b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);
     });

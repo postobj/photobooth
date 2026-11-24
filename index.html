@@ -358,7 +358,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #arch .inside img{max-width:72px!important}
 #arch .inside span{font-size:6.5px!important;padding:2px 4px!important}
 #arch .inside button.dragging{transition:none!important;transform:rotate(0deg) scale(1.08)!important}
-.stickFab{width:34px!important;height:34px!important;border-radius:50%!important;border:1px solid rgba(28,28,27,.45)!important;box-shadow:0 3px 10px rgba(0,0,0,.1)!important;transform:none!important}.stickFab .plus{font-size:20px!important;font-weight:300}</style>
+.stickFab{width:26px!important;height:26px!important;border-radius:999px!important;border:1px solid rgba(28,28,27,.45)!important;box-shadow:0 3px 10px rgba(0,0,0,.1)!important;transform:none!important;flex-direction:row!important;justify-content:flex-start!important;align-items:center!important;gap:0!important;padding:0!important;overflow:hidden;white-space:nowrap;transition:width .35s ease,opacity .6s!important}.stickFab .plus{font-size:17px!important;font-weight:300;width:24px;flex:none;text-align:center}.stickFab .addLab{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:0;transition:opacity .25s;padding-right:10px}.stickFab.open,.stickFab:hover{width:118px!important;opacity:1!important}.stickFab.open .addLab,.stickFab:hover .addLab{opacity:1}</style>
 </head>
 <body>
 <div id="app">
@@ -367,7 +367,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   <section class="scene on" id="out">
     <div id="stage3d"></div>
     <div class="bar"><span class="placeLbl">Photobooth</span><span>4 poses · B&amp;W</span><span id="clock"></span></div>
-    <button class="stickFab" id="stickBtn" aria-label="Stick your own photo on the booth"><span class="plus">+</span><span class="lab">sticker</span></button>
+    <button class="stickFab" id="stickBtn" aria-label="Stick your own photo on the booth"><span class="plus">+</span><span class="addLab">Add sticker</span></button>
     <button class="link stepBack" id="stepBack">← Step back</button>
     <div class="hint" id="outHint">( Pull the curtain open → )</div>
     <div id="timer"><div class="t" id="timeT">2:00</div><div class="bar2"><i id="timeBar"></i></div><div class="sub">Developing · go wander</div></div>
@@ -779,7 +779,7 @@ async function peelSticker(key){booth.lock(true);booth.zoomAtSticker(key);await 
     else{const h=(await get('hiddenStickers'))||[];h.push(key);await put('hiddenStickers',h);}}
   booth.zoomOut();booth.lock(false);}
 loadMyStickers();
-$('#stickBtn').addEventListener('click',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;
+$('#stickBtn').addEventListener('click',e=>{const b=e.currentTarget;if(!matchMedia('(hover:hover)').matches&&!b.classList.contains('open')){b.classList.add('open');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('open'),3500);return;}b.classList.remove('open');const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;
   try{const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f);});const st=makeSticker(await loadImg(url));
     const l=(await get('myStickers'))||[];st.id='u'+Date.now();l.push(st);await put('myStickers',l);booth.addSticker(st.url,l.length-1,st.ar,st.id);sfx.swish();toast('Stuck on your booth');}catch(e){toast('Could not read that image');}};i.click();});
 async function stripNo(id){const l=(await get('list'))||[];const i=l.findIndex(x=>x.id===id);return i<0?0:l.length-i;}
@@ -970,7 +970,7 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pending)tickWait();});
 document.querySelectorAll('.cloudBtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();cloudTap();}));
 let calmOn=null;const curA=document.createElement('div');curA.className='curArrow';curA.innerHTML='<span>›</span><span>›</span><span>›</span>';document.body.appendChild(curA);let lastTouch=0,touching=false;addEventListener('pointerdown',()=>{touching=true;lastTouch=performance.now();});addEventListener('pointerup',()=>{touching=false;lastTouch=performance.now();});
-(function fabLoop(){const o=$('#out');const calm=o.classList.contains('on')&&!o.classList.contains('waiting')&&!o.classList.contains('zoomed')&&!document.querySelector('.nameSheet,.writeSheet')&&!$('#sheet').classList.contains('on');if(calm!==calmOn){calmOn=calm;o.classList.toggle('calm',calm);try{booth.setDim(calm?.85:1);}catch(e){}}const f=document.querySelector('.stickFab');if(f&&booth&&booth.project){{const p=booth.project(-.6,.32,.1);f.style.left=(p.x-17)+'px';f.style.top=(p.y-17)+'px';f.style.bottom='auto';}}{const show=calmOn&&booth.project&&!touching&&performance.now()-lastTouch>2500;if(show){const q=booth.project(.54,1.25,.12);curA.style.left=q.x+'px';curA.style.top=q.y+'px';}curA.classList.toggle('on',!!show);}requestAnimationFrame(fabLoop);})();
+(function fabLoop(){const o=$('#out');const calm=o.classList.contains('on')&&!o.classList.contains('waiting')&&!o.classList.contains('zoomed')&&!document.querySelector('.nameSheet,.writeSheet')&&!$('#sheet').classList.contains('on');if(calm!==calmOn){calmOn=calm;o.classList.toggle('calm',calm);try{booth.setDim(calm?.85:1);}catch(e){}}const f=document.querySelector('.stickFab');if(f&&booth&&booth.project){{const p=booth.project(-.6,.32,.1);f.style.left=(p.x-13)+'px';f.style.top=(p.y-13)+'px';f.style.bottom='auto';}}{const show=calmOn&&booth.project&&!touching&&performance.now()-lastTouch>2500;if(show){const q=booth.project(.54,1.25,.12);curA.style.left=q.x+'px';curA.style.top=q.y+'px';}curA.classList.toggle('on',!!show);}requestAnimationFrame(fabLoop);})();
 initCloud();
 window.__pb={get sb(){return sb},get user(){return sbUser}};
 })();

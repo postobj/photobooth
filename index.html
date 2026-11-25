@@ -256,6 +256,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #arch .open{animation:fadeIn .5s ease both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 #outHint{pointer-events:auto;cursor:pointer}
+@media (max-aspect-ratio:1/1){#outHint{font-size:8.5px;letter-spacing:.14em;padding:6px 13px;white-space:nowrap}#out.waiting.ready:not(.zoomed) #outHint{bottom:calc(98px + env(safe-area-inset-bottom))!important}}
 #sheet p,#sheet li{text-transform:uppercase;letter-spacing:.06em}
 
 #arch .peek.up{z-index:auto!important;transform:translateY(-46px) rotate(0deg) scale(1.04)!important}
@@ -690,7 +691,7 @@ $('#lamp').addEventListener('click',async()=>{askNotify();
 let pending=null,waitTimer=null;
 async function startWaiting(){
   pending=await get('pending');if(!pending){show('out');return;}
-  waiting=true;stripReady=false;show('out');$('#out').classList.add('waiting');booth.setDance(true);window.__resetIn&&window.__resetIn();booth.setOpen(.45);booth.hideStrip();booth.setStrip(pending.img);setTimeout(()=>waitZoom(true),400);
+  waiting=true;stripReady=false;$('#out').classList.remove('ready');show('out');$('#out').classList.add('waiting');booth.setDance(true);window.__resetIn&&window.__resetIn();booth.setOpen(.45);booth.hideStrip();booth.setStrip(pending.img);setTimeout(()=>waitZoom(true),400);
   $('#outHint').style.opacity='0';$('#timer').classList.add('on');if(/[?&]dev\b/.test(location.search))$('#skip').style.display='block';
   stopHum();clearInterval(waitTimer);waitTimer=setInterval(tickWait,250);tickWait();
 }
@@ -722,12 +723,12 @@ function tickWait(){
 }
 async function deliver(){notifyReady();if(!$('#out').classList.contains('on')){document.querySelectorAll('.nameSheet,.writeSheet,.zoomView').forEach(e=>e.remove());show('out');}if(!$('#out').classList.contains('zoomed'))waitZoom(true);
   stopMotor();sfx.clunk();$('#timer').classList.remove('on');$('#skip').style.display='none';
-  await wait(300);booth.dropStrip();await wait(2400);sfx.drip();stripReady=true;booth.setDance(false);
+  await wait(300);booth.dropStrip();await wait(2400);sfx.drip();stripReady=true;$('#out').classList.add('ready');booth.setDance(false);
   if(!$('#out').classList.contains('zoomed'))waitZoom(true);
 }
 $('#skip').addEventListener('click',()=>{if(pending){pending.start=Date.now()-WAIT_MS+1200;put('pending',pending);}});
 async function takeStrip(){
-  if(!pending||!stripReady)return;sfx.swish();stripReady=false;tabStatus(null);
+  if(!pending||!stripReady)return;sfx.swish();stripReady=false;$('#out').classList.remove('ready');tabStatus(null);
   const id='s'+pending.date,item={id,img:pending.img,date:pending.date,place:PLACE,note:''};track('strip');
   const list=(await get('list'))||[];list.unshift({id,date:item.date});await put('list',list);await put(id,item);
   await del('pending');pending=null;waiting=false;$('#out').classList.remove('waiting','zoomed');booth.setDance(false);stopMotor();booth.hideStrip();booth.zoomOut();booth.lock(false);

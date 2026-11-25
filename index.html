@@ -643,6 +643,7 @@ function capture(){
   for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*26;const l=Math.max(0,Math.min(255,d[i]+n));d[i]=l;d[i+1]=l;d[i+2]=l;}
   x.putImageData(im,0,0);return c;
 }
+function perfMask(src){const c=document.createElement('canvas');c.width=SW;c.height=SH;const x=c.getContext('2d');x.drawImage(src,0,0,SW,SH);x.globalCompositeOperation='destination-in';x.drawImage(perfPaper(SW,SH),0,0);return c.toDataURL('image/png');}
 function perfPaper(W,H){ // white paper with stamp-like perforated edges, transparent outside
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   const pi=x.createImageData(W,H),pd=pi.data;for(let i=0;i<pd.length;i+=4){const n=252+Math.random()*3;pd[i]=pd[i+1]=pd[i+2]=n;pd[i+3]=255;}x.putImageData(pi,0,0);
@@ -741,7 +742,8 @@ async function openStrip(id){
   $('#viewImg').src=cur.img;$('#card').classList.remove('flip');
   const d=new Date(cur.date),ds=d.toLocaleDateString('de-DE')+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
   $('#stamp').innerHTML=(cur.place||'').replace(/</g,'&lt;').split(' · ').join('<br>')+'<br>'+ds.split(' · ').join('<br>');$('#viewPlace').textContent=cur.place;$('#viewDate').textContent=ds;
-  $('#note').value=cur.note||'';requestAnimationFrame(fitNote);const bk=document.querySelector('.face.back');bk.classList.toggle('hasImg',!!cur.backImg);bk.style.setProperty('--bimg',cur.backImg?`url(${cur.backImg})`:'none');
+  $('#note').value=cur.note||'';requestAnimationFrame(fitNote);if(cur.from==='friend'&&!cur.masked){try{const fx=async u=>u?perfMask(await loadImg(u)):u;cur.img=await fx(cur.img);if(cur.backImg)cur.backImg=await fx(cur.backImg);cur.masked=true;$('#viewImg').src=cur.img;put(cur.id,cur);}catch(e){}}
+  const bk=document.querySelector('.face.back');bk.classList.toggle('hasImg',!!cur.backImg);bk.style.setProperty('--bimg',cur.backImg?`url(${cur.backImg})`:'none');
   cur.no=await stripNo(cur.id);$('#stripTitle').textContent=stripName(cur)+'  ✎';show('view');
 }
 /* add a strip a friend sent: our own strip, our front+back image, or any photo */
@@ -753,11 +755,11 @@ function addFriendStrip(){const i=document.createElement('input');i.type='file';
     if(ar>.42&&ar<.62&&dark(2,2)){const k=h/(SH+120),g=60*k,W=(w-3*g)/2;front=crop(g,g,W,h-2*g);back=crop(2*g+W,g,W,h-2*g);}      // front + back, as we send it
     else if(ar>.24&&ar<.32&&dark(2,2)){const k=h/(SH+120),g=60*k;front=crop(g,g,w-2*g,h-2*g);}                                 // strip on a dark frame
     let img;
-    if(front||(ar>.18&&ar<.26)){const src=front||crop(0,0,w,h);const c=document.createElement('canvas');c.width=SW;c.height=SH;c.getContext('2d').drawImage(src,0,0,SW,SH);img=c.toDataURL('image/png');}
+    if(front||(ar>.18&&ar<.26)){const src=front||crop(0,0,w,h);img=perfMask(src);}
     else{const c=perfPaper(SW,SH),x=c.getContext('2d'),bw=SW-2*(SP+SM),bh=SH-2*(SP+SM),s2=Math.min(bw/w,bh/h);x.drawImage(im,(SW-w*s2)/2,(SH-h*s2)/2,w*s2,h*s2);img=c.toDataURL('image/png');} // any other photo, on our paper
     const who=await askName('Who is it from?','','a friend');if(who===null)return;
-    const id='f'+Date.now(),item={id,img,date:Date.now(),place:BOOTH+(CITY?' · '+CITY:''),note:'',title:(who.trim()||'a friend'),from:'friend'};
-    if(back)item.backImg=back.toDataURL('image/jpeg',.9);
+    const id='f'+Date.now(),item={id,masked:true,img,date:Date.now(),place:BOOTH+(CITY?' · '+CITY:''),note:'',title:(who.trim()||'a friend'),from:'friend'};
+    if(back)item.backImg=perfMask(back);
     const list=(await get('list'))||[];list.unshift({id,date:item.date});await put('list',list);await put(id,item);
     window.__lastStrip=id;sfx.swish();toast('Added to your archive');openArchive(mKey(item.date),true);
   }catch(e){toast('Could not read that image');}};i.click();}
